@@ -111,6 +111,11 @@ int count_members(struct category *cat);
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
 void toggle_enabled(struct category *cat, int index);
 
+/*! \brief Set a member of a category at the specified index to enabled */
+void set_enabled(struct category *cat, int index);
+/*! \brief Set a member of a category at the specified index to not enabled */
+void clear_enabled(struct category *cat, int index);
+
 /*! \brief Enable/Disable all members of a category as long as dependencies have been met and no conflicts are found */
 void set_all(struct category *cat, int val);
 

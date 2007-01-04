@@ -21,7 +21,7 @@
  *
  * \author Russell Bryant <russell@digium.com>
  * 
- * \brief curses frontend for Asterisk module selection
+ * \brief curses frontend for selection maintenance
  */
 
 #include <stdlib.h>
@@ -275,6 +275,16 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 		case '\n':
 		case ' ':
 			toggle_enabled(cat, curopt);
+			changed = 1;
+			break;
+		case 'y':
+		case 'Y':
+			set_enabled(cat, curopt);
+			changed = 1;
+			break;
+		case 'n':
+		case 'N':
+			clear_enabled(cat, curopt);
 			changed = 1;
 			break;
 		case 'h':

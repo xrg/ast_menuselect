@@ -410,6 +410,38 @@ void toggle_enabled(struct category *cat, int index)
 	}
 }
 
+void set_enabled(struct category *cat, int index)
+{
+	struct member *mem;
+	int i = 0;
+
+	AST_LIST_TRAVERSE(&cat->members, mem, list) {
+		if (i++ == index)
+			break;
+	}
+
+	if (mem && !(mem->depsfailed || mem->conflictsfailed)) {
+		mem->enabled = 1;
+		mem->was_defaulted = 0;
+	}
+}
+
+void clear_enabled(struct category *cat, int index)
+{
+	struct member *mem;
+	int i = 0;
+
+	AST_LIST_TRAVERSE(&cat->members, mem, list) {
+		if (i++ == index)
+			break;
+	}
+
+	if (mem) {
+		mem->enabled = 0;
+		mem->was_defaulted = 0;
+	}
+}
+
 /*! \brief Process a previously failed dependency
  *
  * If a module was previously disabled because of a failed dependency
