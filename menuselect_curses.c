@@ -26,9 +26,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include <curses.h>
 
 #include "menuselect.h"
@@ -326,8 +328,6 @@ static void draw_title_window(WINDOW *title)
 	wrefresh(title);
 }
 
-
-
 int run_menu(void)
 {
 	WINDOW *title;
@@ -423,10 +423,15 @@ static int score = 0;
 static int num_aliens = 0;
 struct blip *tank = NULL;
 
+/*! Probability of a bomb, out of 100 */
+#define BOMB_PROB   1
+
 static int init_blips(void)
 {
 	int i, j;
 	struct blip *cur;
+
+	srandom(time(NULL) + getpid());
 
 	/* make tank */
 	cur = calloc(1, sizeof(struct blip));
@@ -438,7 +443,7 @@ static int init_blips(void)
 	AST_LIST_INSERT_HEAD(&blips, cur, entry);
 	tank = cur;
 
-	/* aliens */
+	/* 3 rows of 10 aliens */
 	num_aliens = 0;
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 10; j++) {
@@ -563,6 +568,31 @@ static int move_aliens(void)
 		} else {
 			cur->x++;
 		}
+		/* Alien into the tank == game over */
+		if (cur->x == tank->x && cur->y == tank->y)
+			return 1;
+		if (random() % 100 < BOMB_PROB && cur->y != max_y) {
+			struct blip *bomb = calloc(1, sizeof(struct blip));
+			if (!bomb)
+				continue;
+			bomb->type = BLIP_BOMB;
+			bomb->x = cur->x;
+			bomb->y = cur->y + 1;
+			AST_LIST_INSERT_HEAD(&blips, bomb, entry);
+		}
+	}
+
+	return 0;
+}
+
+static int move_bombs(void)
+{
+	struct blip *cur;
+
+	AST_LIST_TRAVERSE(&blips, cur, entry) {
+		if (cur->type != BLIP_BOMB)
+			continue;
+		cur->y++;
 		if (cur->x == tank->x && cur->y == tank->y)
 			return 1;
 	}
@@ -687,7 +717,7 @@ static void play_space(void)
 		if (quit)
 			break;
 		if (!(jiffies % 25)) {
-			if (move_aliens()) {
+			if (move_aliens() || move_bombs()) {
 				game_over(0);
 				break;
 			}
