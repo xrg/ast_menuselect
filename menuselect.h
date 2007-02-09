@@ -32,9 +32,13 @@
 #define OUTPUT_MAKEDEPS_DEFAULT "menuselect.makedeps"
 #define MENUSELECT_DEPS         "build_tools/menuselect-deps"
 
+struct member;
+
 struct depend {
 	/*! the name of the dependency */
 	const char *name;
+	/*! if this dependency is a member, not an external object */
+	const struct member *member;
 	/*! for linking */
 	AST_LIST_ENTRY(depend) list;
 };
@@ -42,6 +46,8 @@ struct depend {
 struct conflict {
 	/*! the name of the conflict */
 	const char *name;
+	/*! if this conflict is a member, not an external object */
+	const struct member *member;
 	/*! for linking */
 	AST_LIST_ENTRY(conflict) list;
 };
@@ -51,6 +57,12 @@ struct use {
 	const char *name;
 	/*! for linking */
 	AST_LIST_ENTRY(use) list;
+};
+
+enum failure_types {
+	NO_FAILURE = 0,
+	SOFT_FAILURE = 1,
+	HARD_FAILURE = 2,
 };
 
 struct member {
@@ -67,9 +79,9 @@ struct member {
 	/*! This module was enabled when the config was loaded */
 	unsigned int was_enabled:1;
 	/*! This module has failed dependencies */
-	unsigned int depsfailed:1;
+	unsigned int depsfailed:2;
 	/*! This module has failed conflicts */
-	unsigned int conflictsfailed:1;
+	unsigned int conflictsfailed:2;
 	/*! This module's 'enabled' flag was changed by a default only */
 	unsigned int was_defaulted:1;
 	/*! dependencies of this module */

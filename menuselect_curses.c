@@ -41,10 +41,11 @@
 #define TITLE_HEIGHT	7
 
 #define MIN_X		80
-#define MIN_Y		20
+#define MIN_Y		21
 
 #define PAGE_OFFSET	10
 
+extern int changes_made;
 
 /*! Maximum number of characters horizontally */
 static int max_x = 0;
@@ -69,11 +70,17 @@ static void winch_handler(int sig)
 {
 	getmaxyx(stdscr, max_y, max_x);
 
-	if (max_x < MIN_X - 1 || max_y < MIN_Y - 1) {
-		fprintf(stderr, "Terminal must be at least 80 x 25.\n");
+	if (max_x < MIN_X || max_y < MIN_Y) {
+		fprintf(stderr, "Terminal must be at least %d x %d.\n", MIN_X, MIN_Y);
 		max_x = MIN_X - 1;
 		max_y = MIN_Y - 1;
 	}
+}
+
+/*! \brief Handle a SIGQUIT */
+static void sigint_handler(int sig)
+{
+
 }
 
 /*! \brief Display help information */
@@ -88,6 +95,43 @@ static void show_help(WINDOW *win)
 	}
 	wrefresh(win);
 	getch(); /* display the help until the user hits a key */
+}
+
+static int really_quit(WINDOW *win)
+{
+	int c;
+	wclear(win);
+	wmove(win, 2, max_x / 2 - 15);
+	waddstr(win, "ARE YOU SURE?");
+        wmove(win, 3, max_x / 2 - 12);
+	waddstr(win, "--- It appears you have made some changes, and");
+	wmove(win, 4, max_x / 2 - 12);
+	waddstr(win, "you have opted to Quit without saving these changes!");
+	wmove(win, 6, max_x / 2 - 12);
+	waddstr(win, "  Please Enter Y to exit without saving;");
+	wmove(win, 7, max_x / 2 - 12);
+	waddstr(win, "  Enter N to cancel your decision to quit,");
+	wmove(win, 8, max_x / 2 - 12);
+	waddstr(win, "     and keep working in menuselect, or");
+	wmove(win, 9, max_x / 2 - 12);
+	waddstr(win, "  Enter S to save your changes, and exit");
+	wmove(win, 10, max_x / 2 - 12);
+	wrefresh(win);
+	while ((c=getch())) {
+		if (c == 'Y' || c == 'y') {
+			c = 'q';
+			break;
+		}
+		if (c == 'S' || c == 's') {
+			c = 'S';
+			break;
+		}
+		if (c == 'N' || c == 'n') {
+			c = '%';
+			break;
+		}
+	}
+	return c;
 }
 
 static void draw_main_menu(WINDOW *menu, int curopt)
@@ -139,6 +183,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 		strcpy(buf, "Depends on: ");
 		AST_LIST_TRAVERSE(&mem->deps, dep, list) {
 			strncat(buf, dep->name, sizeof(buf) - strlen(buf) - 1);
+			strncat(buf, dep->member ? "(M)" : "(E)", sizeof(buf) - strlen(buf) - 1);
 			if (AST_LIST_NEXT(dep, list))
 				strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
 		}
@@ -199,10 +244,15 @@ static void draw_category_menu(WINDOW *menu, struct category *cat, int start, in
 		}
 		wmove(menu, j++, max_x / 2 - 10);
 		i++;
-		if (mem->depsfailed)
+		if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE)) {
 			snprintf(buf, sizeof(buf), "XXX %d.%s %s", i, i < 10 ? " " : "", mem->name);
-		else
+		} else if (mem->depsfailed == SOFT_FAILURE) {
+			snprintf(buf, sizeof(buf), "<%s> %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+		} else if (mem->conflictsfailed == SOFT_FAILURE) {
+			snprintf(buf, sizeof(buf), "(%s) %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+		} else {
 			snprintf(buf, sizeof(buf), "[%s] %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+		}
 		waddstr(menu, buf);
 		
 		if (curopt + 1 == i)
@@ -340,8 +390,9 @@ int run_menu(void)
 	initscr();
 	getmaxyx(stdscr, max_y, max_x);
 	signal(SIGWINCH, winch_handler); /* handle window resizing in xterm */
+	signal(SIGINT, sigint_handler); /* handle window resizing in xterm */
 
-	if (max_x < MIN_X - 1 || max_y < MIN_Y - 1) {
+	if (max_x < MIN_X || max_y < MIN_Y) {
 		fprintf(stderr, "Terminal must be at least %d x %d.\n", MIN_X, MIN_Y);
 		endwin();
 		return -1;
@@ -388,9 +439,17 @@ int run_menu(void)
 		default:
 			break;	
 		}
-		if (c == 'q' || c == 'Q' || c == 27) {
-			res = -1;
-			break;
+		if (c == 'q' || c == 'Q' || c == 27 || c == 3) {
+			if (changes_made) {
+				c = really_quit(menu);
+				if (c == 'q') {
+					res = -1;
+					break;
+				}
+			} else {
+				res = -1;
+				break;
+			}
 		}
 		if (c == 'x' || c == 'X' || c == 's' || c == 'S')
 			break;	
