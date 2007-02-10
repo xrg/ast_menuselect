@@ -53,16 +53,25 @@ static int max_x = 0;
 static int max_y = 0;
 
 static const char * const help_info[] = {
-	"scroll        => up/down arrows",
-	"(de)select    => Enter",
-	"select all    => F8",
-	"deselect all  => F7",
-	"back          => left arrow",
-	"quit          => q",
-	"save and quit => x",
+	"scroll              => up/down arrows",
+	"toggle selection    => Enter",
+	"select              => y",
+	"deselect            => n",
+	"select all          => F8",
+	"deselect all        => F7",
+	"back                => left arrow",
+	"quit                => q",
+	"save and quit       => x",
 	"",
 	"XXX means dependencies have not been met",
-	"    or a conflict exists."
+	"    or a conflict exists",
+	"",
+	"< > means a dependency has been deselected",
+	"    and will be automatically re-selected",
+	"    if this item is selected",
+	"",
+	"( ) means a conflicting item has been",
+	"    selected",
 };
 
 /*! \brief Handle a window resize in xterm */
@@ -204,6 +213,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 		strcpy(buf, "Conflicts with: ");
 		AST_LIST_TRAVERSE(&mem->conflicts, con, list) {
 			strncat(buf, con->name, sizeof(buf) - strlen(buf) - 1);
+			strncat(buf, con->member ? "(M)" : "(E)", sizeof(buf) - strlen(buf) - 1);
 			if (AST_LIST_NEXT(con, list))
 				strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
 		}

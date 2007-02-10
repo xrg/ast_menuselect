@@ -38,7 +38,7 @@ struct depend {
 	/*! the name of the dependency */
 	const char *name;
 	/*! if this dependency is a member, not an external object */
-	const struct member *member;
+	struct member *member;
 	/*! for linking */
 	AST_LIST_ENTRY(depend) list;
 };

@@ -476,8 +476,18 @@ static void match_member_relations(void)
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			AST_LIST_TRAVERSE(&mem->deps, dep, list) {
+				AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+					if (strcasecmp(mem2->name, dep->name))
+						continue;
+
+					dep->member = mem2;
+					break;
+				}
+				if (dep->member)
+					break;
+
 				AST_LIST_TRAVERSE(&categories, cat2, list) {
-					AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
 						if (strcasecmp(mem2->name, dep->name))
 							continue;
 						
@@ -494,8 +504,18 @@ static void match_member_relations(void)
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			AST_LIST_TRAVERSE(&mem->conflicts, cnf, list) {
+				AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+					if (strcasecmp(mem2->name, cnf->name))
+						continue;
+
+					cnf->member = mem2;
+					break;
+				}
+				if (cnf->member)
+					break;
+
 				AST_LIST_TRAVERSE(&categories, cat2, list) {
-					AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
 						if (strcasecmp(mem2->name, cnf->name))
 							continue;
 						
@@ -552,6 +572,37 @@ static void mark_as_present(const char *member, const char *category)
 		fprintf(stderr, "category '%s' not found! Can't mark '%s' as disabled.\n", category, member);
 }
 
+unsigned int enable_member(struct member *mem)
+{
+	struct depend *dep;
+	unsigned int can_enable = 1;
+
+	AST_LIST_TRAVERSE(&mem->deps, dep, list) {
+		if (!dep->member)
+			continue;
+
+		if (!dep->member->enabled) {
+			if (dep->member->conflictsfailed != NO_FAILURE) {
+				can_enable = 0;
+				break;
+			}
+
+			if (dep->member->depsfailed == HARD_FAILURE) {
+				can_enable = 0;
+				break;
+			}
+
+			if (!(can_enable = enable_member(dep->member)))
+				break;
+		}
+	}
+
+	if ((mem->enabled = can_enable))
+		while (calc_dep_failures() || calc_conflict_failures());
+
+	return can_enable;
+}
+
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
 void toggle_enabled(struct category *cat, int index)
 {
@@ -563,11 +614,20 @@ void toggle_enabled(struct category *cat, int index)
 			break;
 	}
 
-	if (mem && !(mem->depsfailed || mem->conflictsfailed)) {
-		mem->enabled = !mem->enabled;
-		mem->was_defaulted = 1;
-		changes_made++;
+	if (!mem)
+		return;
+
+	if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE))
+		return;
+
+	if (!mem->enabled) {
+		enable_member(mem);
+	} else {
+		mem->enabled = 0;
 	}
+
+	mem->was_defaulted = 0;
+	changes_made++;
 
 	while (calc_dep_failures() || calc_conflict_failures());
 }
@@ -582,11 +642,18 @@ void set_enabled(struct category *cat, int index)
 			break;
 	}
 
-	if (mem && !(mem->depsfailed || mem->conflictsfailed)) {
-		mem->enabled = 1;
-		mem->was_defaulted = 0;
-		changes_made++;
-	}
+	if (!mem)
+		return;
+
+	if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE))
+		return;
+
+	if (mem->enabled)
+		return;
+
+	enable_member(mem);
+	mem->was_defaulted = 0;
+	changes_made++;
 
 	while (calc_dep_failures() || calc_conflict_failures());
 }
@@ -601,11 +668,15 @@ void clear_enabled(struct category *cat, int index)
 			break;
 	}
 
-	if (mem) {
-		mem->enabled = 0;
-		mem->was_defaulted = 0;
-		changes_made++;
-	}
+	if (!mem)
+		return;
+
+	if (!mem->enabled)
+		return;
+
+	mem->enabled = 0;
+	mem->was_defaulted = 0;
+	changes_made++;
 
 	while (calc_dep_failures() || calc_conflict_failures());
 }
@@ -898,11 +969,20 @@ void set_all(struct category *cat, int val)
 	struct member *mem;
 
 	AST_LIST_TRAVERSE(&cat->members, mem, list) {
-		if (!(mem->depsfailed || mem->conflictsfailed)) {
-			mem->enabled = val;
-			mem->was_defaulted = 0;
-			changes_made++;
+		if (mem->enabled == val)
+			continue;
+
+		if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE))
+			continue;
+
+		if (val) {
+			enable_member(mem);
+		} else {
+			mem->enabled = 0;
 		}
+
+		mem->was_defaulted = 0;
+		changes_made++;
 	}
 }
 
