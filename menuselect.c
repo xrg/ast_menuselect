@@ -410,7 +410,7 @@ static unsigned int calc_conflict_failures(void)
 					}
 				}
 				
-				if (mem->conflictsfailed != old_failure) {
+				if (mem->conflictsfailed != old_failure && mem->conflictsfailed != NO_FAILURE) {
 					mem->enabled = 0;
 					changed = 1;
 					break; /* This dependency is not met, so we can stop now */
