@@ -28,12 +28,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "mxml/mxml.h"
 #include "linkedlists.h"
 #include "menuselect.h"
 
 #undef MENUSELECT_DEBUG
+#ifdef MENUSELECT_DEBUG
+static FILE *debug;
+#endif
 
 /*! The list of categories */
 struct categories categories = AST_LIST_HEAD_NOLOCK_INIT_VALUE;
@@ -104,6 +108,19 @@ static inline char *skip_blanks(char *str)
 		str++;
 
 	return str;
+}
+
+static void print_debug(const char *format, ...)
+{
+#ifdef MENUSELECT_DEBUG
+	va_list ap;
+
+	va_start(ap, format);
+	vfprintf(debug, format, ap);
+	va_end(ap);
+
+	fflush(debug);
+#endif
 }
 
 /*! \brief Add a category to the category list, ensuring that there are no duplicates */
@@ -289,10 +306,11 @@ static unsigned int calc_dep_failures(void)
 	struct category *cat;
 	struct member *mem;
 	struct depend *dep;
-	unsigned int changed;
+	unsigned int changed, old_failure;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			old_failure = mem->depsfailed;
 			AST_LIST_TRAVERSE(&mem->deps, dep, list) {
 				if (dep->member)
 					continue;
@@ -309,6 +327,8 @@ static unsigned int calc_dep_failures(void)
 					break; /* This dependency is not met, so we can stop now */
 				}
 			}
+			if (old_failure == SOFT_FAILURE && mem->depsfailed != HARD_FAILURE)
+				mem->depsfailed = SOFT_FAILURE;
 		}
 	}
 
@@ -317,7 +337,7 @@ static unsigned int calc_dep_failures(void)
 
 		AST_LIST_TRAVERSE(&categories, cat, list) {
 			AST_LIST_TRAVERSE(&cat->members, mem, list) {
-				unsigned int old_failure = mem->depsfailed;
+				old_failure = mem->depsfailed;
 
 				if (mem->depsfailed == HARD_FAILURE)
 					continue;
@@ -365,10 +385,11 @@ static unsigned int calc_conflict_failures(void)
 	struct category *cat;
 	struct member *mem;
 	struct conflict *cnf;
-	unsigned int changed;
+	unsigned int changed, old_failure;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			old_failure = mem->conflictsfailed;
 			AST_LIST_TRAVERSE(&mem->conflicts, cnf, list) {
 				if (cnf->member)
 					continue;
@@ -385,6 +406,8 @@ static unsigned int calc_conflict_failures(void)
 				if (mem->conflictsfailed != NO_FAILURE)
 					break; /* This conflict was found, so we can stop now */
 			}
+			if (old_failure == SOFT_FAILURE && mem->conflictsfailed != HARD_FAILURE)
+				mem->conflictsfailed = SOFT_FAILURE;
 		}
 	}
 
@@ -393,7 +416,7 @@ static unsigned int calc_conflict_failures(void)
 
 		AST_LIST_TRAVERSE(&categories, cat, list) {
 			AST_LIST_TRAVERSE(&cat->members, mem, list) {
-				unsigned int old_failure = mem->conflictsfailed;
+				old_failure = mem->conflictsfailed;
 
 				if (mem->conflictsfailed == HARD_FAILURE)
 					continue;
@@ -1062,6 +1085,13 @@ int main(int argc, char *argv[])
 	int res = 0;
 	unsigned int x;
 
+#ifdef MENUSELECT_DEBUG
+	if (!(debug = fopen("menuselect_debug.txt", "w"))) {
+		fprintf(stderr, "Failed to open menuselect_debug.txt for debug output.\n");
+		exit(1);
+	}
+#endif
+
 	/* Parse the input XML files to build the list of available options */
 	if ((res = build_member_list()))
 		exit(res);
@@ -1120,6 +1150,11 @@ int main(int argc, char *argv[])
 	free_deps_file();
 	free_trees();
 	free_member_list();
+
+#ifdef MENUSELECT_DEBUG
+	if (debug)
+		fclose(debug);
+#endif
 
 	exit(res);
 }
