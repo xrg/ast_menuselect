@@ -874,11 +874,11 @@ static int generate_makeopts_file(void)
 	/* Output which members were disabled because of failed dependencies or conflicts */
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
-			if (!(mem->depsfailed || mem->conflictsfailed))
+			if (mem->depsfailed != HARD_FAILURE && mem->conflictsfailed != HARD_FAILURE)
 				continue;
 
 			if (!mem->defaultenabled || !strcasecmp(mem->defaultenabled, "yes"))
-					fprintf(f, "MENUSELECT_DEPSFAILED=%s=%s\n", cat->name, mem->name);
+				fprintf(f, "MENUSELECT_DEPSFAILED=%s=%s\n", cat->name, mem->name);
 		}
 	}
 
@@ -1084,6 +1084,9 @@ int main(int argc, char *argv[])
 {
 	int res = 0;
 	unsigned int x;
+
+	/* Make the compiler happy */
+	print_debug("");
 
 #ifdef MENUSELECT_DEBUG
 	if (!(debug = fopen("menuselect_debug.txt", "w"))) {
