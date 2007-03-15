@@ -121,7 +121,9 @@ int count_categories(void);
 int count_members(struct category *cat);
 
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
-void toggle_enabled(struct category *cat, int index);
+void toggle_enabled_index(struct category *cat, int index);
+
+void toggle_enabled(struct member *mem);
 
 /*! \brief Set a member of a category at the specified index to enabled */
 void set_enabled(struct category *cat, int index);

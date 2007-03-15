@@ -626,8 +626,24 @@ unsigned int enable_member(struct member *mem)
 	return can_enable;
 }
 
+void toggle_enabled(struct member *mem)
+{
+	if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE))
+		return;
+
+	if (!mem->enabled)
+		enable_member(mem);
+	else
+		mem->enabled = 0;
+
+	mem->was_defaulted = 0;
+	changes_made++;
+
+	while (calc_dep_failures() || calc_conflict_failures());
+}
+
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
-void toggle_enabled(struct category *cat, int index)
+void toggle_enabled_index(struct category *cat, int index)
 {
 	struct member *mem;
 	int i = 0;
@@ -640,19 +656,7 @@ void toggle_enabled(struct category *cat, int index)
 	if (!mem)
 		return;
 
-	if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE))
-		return;
-
-	if (!mem->enabled) {
-		enable_member(mem);
-	} else {
-		mem->enabled = 0;
-	}
-
-	mem->was_defaulted = 0;
-	changes_made++;
-
-	while (calc_dep_failures() || calc_conflict_failures());
+	toggle_enabled(mem);
 }
 
 void set_enabled(struct category *cat, int index)

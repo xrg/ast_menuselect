@@ -336,7 +336,7 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 		case KEY_ENTER:
 		case '\n':
 		case ' ':
-			toggle_enabled(cat, curopt);
+			toggle_enabled_index(cat, curopt);
 			changed = 1;
 			break;
 		case 'y':
