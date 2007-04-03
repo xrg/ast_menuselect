@@ -1141,12 +1141,7 @@ int main(int argc, char *argv[])
 	if (!check_deps && !res)
 		res = run_menu();
 
-	/* Write out the menuselect.makeopts file if
-	 * 1) menuselect was not executed with --check-deps
-	 * 2) menuselect was executed with --check-deps but menuselect.makeopts
-	 *    did not already exist.
-	 */
-	if ((!check_deps || !existing_config) && !res)
+	if (!res)
 		res = generate_makeopts_file();
 
 	/* Always generate the dependencies file */
