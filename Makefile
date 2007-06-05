@@ -42,7 +42,7 @@ all: autoconfig.h
 	@$(MAKE) menuselect
 
 autoconfig.h:
-	@./configure $(CONFIGURE_SILENT)
+	@./configure $(CONFIGURE_SILENT) CC= LD= AR=
 
 _gmenuselect: autoconfig.h 
 	@$(MAKE) gmenuselect
