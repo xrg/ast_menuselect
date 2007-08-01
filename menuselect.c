@@ -1130,6 +1130,8 @@ int main(int argc, char *argv[])
 	dump_member_list();
 #endif
 
+	while (calc_dep_failures() || calc_conflict_failures());
+
 	if (!existing_config)
 		process_defaults();
 	else if (check_deps)
