@@ -300,7 +300,10 @@ static int parse_tree(const char *tree_file)
 	return 0;
 }
 
-static unsigned int calc_dep_failures(void)
+/*!
+ * \arg interactive Set to non-zero if being called while user is making changes
+ */
+static unsigned int calc_dep_failures(int interactive)
 {
 	unsigned int result = 0;
 	struct category *cat;
@@ -361,7 +364,7 @@ static unsigned int calc_dep_failures(void)
 					if ((mem->depsfailed == NO_FAILURE) && mem->was_defaulted) {
 						mem->enabled = !strcasecmp(mem->defaultenabled, "yes");
 					} else {
-						mem->enabled = 0;
+						mem->enabled = interactive ? 0 : mem->was_enabled;
 					}
 					changed = 1;
 					break; /* This dependency is not met, so we can stop now */
@@ -379,7 +382,7 @@ static unsigned int calc_dep_failures(void)
 	return result;
 }
 
-static unsigned int calc_conflict_failures(void)
+static unsigned int calc_conflict_failures(int interactive)
 {
 	unsigned int result = 0;
 	struct category *cat;
@@ -621,7 +624,7 @@ unsigned int enable_member(struct member *mem)
 	}
 
 	if ((mem->enabled = can_enable))
-		while (calc_dep_failures() || calc_conflict_failures());
+		while (calc_dep_failures(1) || calc_conflict_failures(1));
 
 	return can_enable;
 }
@@ -636,10 +639,11 @@ void toggle_enabled(struct member *mem)
 	else
 		mem->enabled = 0;
 
+					fprintf(stderr, "3- changed %s to %d\n", mem->name, mem->enabled);
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(1) || calc_conflict_failures(1));
 }
 
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
@@ -682,7 +686,7 @@ void set_enabled(struct category *cat, int index)
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(1) || calc_conflict_failures(1));
 }
 
 void clear_enabled(struct category *cat, int index)
@@ -705,7 +709,7 @@ void clear_enabled(struct category *cat, int index)
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(1) || calc_conflict_failures(1));
 }
 
 /*! \brief Process a previously failed dependency
@@ -1107,7 +1111,7 @@ int main(int argc, char *argv[])
 	if ((res = process_deps()))
 		exit(res);
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(0) || calc_conflict_failures(0));
 	
 	/* The --check-deps option is used to ask this application to check to
 	 * see if that an existing menuselect.makeopts file contains all of the
@@ -1130,14 +1134,14 @@ int main(int argc, char *argv[])
 	dump_member_list();
 #endif
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(0) || calc_conflict_failures(0));
 
 	if (!existing_config)
 		process_defaults();
 	else if (check_deps)
 		res = sanity_check();
 
-	while (calc_dep_failures() || calc_conflict_failures());
+	while (calc_dep_failures(0) || calc_conflict_failures(0));
 	
 	/* Run the menu to let the user enable/disable options */
 	if (!check_deps && !res)
