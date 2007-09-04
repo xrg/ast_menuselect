@@ -45,6 +45,14 @@
 
 #define PAGE_OFFSET	10
 
+#define SCROLL_NONE     0
+#define SCROLL_DOWN     1
+
+#define SCROLL_DOWN_INDICATOR "... More ..."
+
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#define MAX(x,y) ((x)<(y)?(y):(x))
+
 extern int changes_made;
 
 /*! Maximum number of characters horizontally */
@@ -222,7 +230,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 
 }
 
-static void draw_category_menu(WINDOW *menu, struct category *cat, int start, int end, int curopt, int changed)
+static void draw_category_menu(WINDOW *menu, struct category *cat, int start, int end, int curopt, int changed, int flags)
 {
 	int i = 0;
 	int j = 0;
@@ -268,8 +276,13 @@ static void draw_category_menu(WINDOW *menu, struct category *cat, int start, in
 		if (curopt + 1 == i)
 			display_mem_info(menu, mem, start, end);
 
-		if (i == end)
+		if (i == end - (flags & SCROLL_DOWN ? 1 : 0))
 			break;
+	}
+
+	if (flags & SCROLL_DOWN) {
+		wmove(menu, j, max_x / 2 - sizeof(SCROLL_DOWN_INDICATOR) / 2);
+		waddstr(menu, SCROLL_DOWN_INDICATOR);
 	}
 
 	wmove(menu, curopt - start, max_x / 2 - 9);
@@ -277,6 +290,34 @@ static void draw_category_menu(WINDOW *menu, struct category *cat, int start, in
 }
 
 static void play_space(void);
+
+static int move_up(int *current, int itemcount, int delta, int *start, int *end, int scroll)
+{
+	if (*current > 0) {
+		*current = MAX(*current - delta, 0);
+		if (*current < *start) {
+			int diff = *start - MAX(*start - delta, 0);
+			*start  -= diff;
+			*end    -= diff;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int move_down(int *current, int itemcount, int delta, int *start, int *end, int scroll)
+{
+	if (*current < itemcount) {
+		*current = MIN(*current + delta, itemcount);
+		if (*current > *end - 1 - (scroll & SCROLL_DOWN ? 1 : 0)) {
+			int diff = MIN(*end + delta - 1, itemcount) - *end + 1;
+			*start  += diff;
+			*end    += diff;
+			return 1;
+		}
+	}
+	return 0;
+}
 
 static int run_category_menu(WINDOW *menu, int cat_num)
 {
@@ -288,6 +329,7 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 	int curopt = 0;
 	int maxopt;
 	int changed = 1;
+	int scroll = SCROLL_NONE;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		if (i++ == cat_num)
@@ -298,36 +340,32 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 
 	maxopt = count_members(cat) - 1;
 
-	draw_category_menu(menu, cat, start, end, curopt, changed);
+	if (maxopt > end) {
+		scroll = SCROLL_DOWN;
+	}
+
+	draw_category_menu(menu, cat, start, end, curopt, changed, scroll);
 
 	while ((c = getch())) {
 		changed = 0;
 		switch (c) {
 		case KEY_UP:
-			if (curopt > 0) {
-				curopt--;
-				if (curopt < start) {
-					start--;
-					end--;
-					changed = 1;
-				}
-			}
+			changed = move_up(&curopt, maxopt, 1, &start, &end, scroll);
 			break;
 		case KEY_DOWN:
-			if (curopt < maxopt) {
-				curopt++;
-				if (curopt > end - 1) {
-					start++;
-					end++;
-					changed = 1;
-				}
-			}
-			break;
-		case KEY_NPAGE:
-			/* XXX Move down the list by PAGE_OFFSET */
+			changed = move_down(&curopt, maxopt, 1, &start, &end, scroll);
 			break;
 		case KEY_PPAGE:
-			/* XXX Move up the list by PAGE_OFFSET */
+			changed = move_up(&curopt, maxopt, MIN(PAGE_OFFSET, max_y - TITLE_HEIGHT - 6 - (scroll & SCROLL_DOWN ? 1 : 0)), &start, &end, scroll);
+			break;
+		case KEY_NPAGE:
+			changed = move_down(&curopt, maxopt, MIN(PAGE_OFFSET, max_y - TITLE_HEIGHT - 6 - (scroll & SCROLL_DOWN ? 1 : 0)), &start, &end, scroll);
+			break;
+		case KEY_HOME:
+			changed = move_up(&curopt, maxopt, curopt, &start, &end, scroll);
+			break;
+		case KEY_END:
+			changed = move_down(&curopt, maxopt, maxopt - curopt, &start, &end, scroll);
 			break;
 		case KEY_LEFT:
 		case 27:	/* Esc key */
@@ -365,8 +403,15 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 			break;	
 		}
 		if (c == 'x' || c == 'X' || c == 'Q' || c == 'q')
-			break;	
-		draw_category_menu(menu, cat, start, end, curopt, changed);
+			break;
+
+		if (end <= maxopt) {
+			scroll |= SCROLL_DOWN;
+		} else {
+			scroll &= ~SCROLL_DOWN;
+		}
+
+		draw_category_menu(menu, cat, start, end, curopt, changed, scroll);
 	}
 
 	wrefresh(menu);
@@ -431,6 +476,12 @@ int run_menu(void)
 		case KEY_DOWN:
 			if (curopt < maxopt)
 				curopt++;
+			break;
+		case KEY_HOME:
+			curopt = 0;
+			break;
+		case KEY_END:
+			curopt = maxopt;
 			break;
 		case KEY_RIGHT:
 		case KEY_ENTER:
