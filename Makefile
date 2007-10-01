@@ -78,6 +78,6 @@ clean:
 dist-clean: distclean
 
 distclean: clean
-	@if test -f mxml/Makefile ; then $(MAKE) -C mxml clean ; fi
+	@if test -f mxml/Makefile ; then $(MAKE) -C mxml distclean ; fi
 	rm -f autoconfig.h config.status config.log makeopts
 	rm -rf autom4te.cache
