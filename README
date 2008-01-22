@@ -35,6 +35,7 @@ MENUSELECT DEPENDENCIES
 libncurses -- This is needed for the curses frontend.
 libmxml -- This library, Mini-XML, is used for XML parsing. 
            (http://www.easysw.com/~mike/mxml/)
+	   (Asterisk uses the code in http://svn.digium.com/svn/mxml/ )
 
 
 ENVIRONMENT SETUP
