@@ -219,6 +219,8 @@ static int parse_tree(const char *tree_file)
 		cat->displayname = mxmlElementGetAttr(cur, "displayname");
 		if ((tmp = mxmlElementGetAttr(cur, "positive_output")))
 			cat->positive_output = !strcasecmp(tmp, "yes");
+		if ((tmp = mxmlElementGetAttr(cur, "exclusive")))
+			cat->exclusive = !strcasecmp(tmp, "yes");
 		cat->remove_on_change = mxmlElementGetAttr(cur, "remove_on_change");
 
 		if (add_category(cat)) {
@@ -439,7 +441,7 @@ static unsigned int calc_conflict_failures(int interactive)
 				if (mem->conflictsfailed != old_failure && mem->conflictsfailed != NO_FAILURE) {
 					mem->enabled = 0;
 					changed = 1;
-					break; /* This dependency is not met, so we can stop now */
+					break; /* This conflict has been found, so we can stop now */
 				}
 			}
 			if (changed)
@@ -492,12 +494,13 @@ static void free_deps_file(void)
 		free(dep_file);
 }
 
-static void match_member_relations(void)
+static int match_member_relations(void)
 {
 	struct category *cat, *cat2;
 	struct member *mem, *mem2;
 	struct depend *dep;
 	struct conflict *cnf;
+	struct use *use;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
@@ -529,6 +532,53 @@ static void match_member_relations(void)
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			AST_LIST_TRAVERSE(&mem->uses, use, list) {
+				AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+					if (strcasecmp(mem2->name, use->name))
+						continue;
+
+					use->member = mem2;
+					break;
+				}
+				if (use->member)
+					break;
+
+				AST_LIST_TRAVERSE(&categories, cat2, list) {
+					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
+						if (strcasecmp(mem2->name, use->name))
+							continue;
+						
+						use->member = mem2;
+						break;
+					}
+					if (use->member)
+						break;
+				}
+			}
+		}
+	}
+
+	AST_LIST_TRAVERSE(&categories, cat, list) {
+		if (!cat->exclusive)
+			continue;
+
+		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			AST_LIST_TRAVERSE(&cat->members, mem2, list) {
+				if (mem2 == mem)
+					continue;
+
+				if (!(cnf = calloc(1, sizeof(*cnf))))
+					return -1;
+
+				cnf->name = mem2->name;
+				cnf->member = mem2;
+				AST_LIST_INSERT_TAIL(&mem->conflicts, cnf, list);
+			}
+		}
+	}
+
+	AST_LIST_TRAVERSE(&categories, cat, list) {
+		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			AST_LIST_TRAVERSE(&mem->conflicts, cnf, list) {
 				AST_LIST_TRAVERSE(&cat->members, mem2, list) {
 					if (strcasecmp(mem2->name, cnf->name))
@@ -554,6 +604,8 @@ static void match_member_relations(void)
 			}
 		}
 	}
+
+	return 0;
 }
 
 /*! \brief Iterate through all of the input tree files and call the parse function on them */
@@ -569,7 +621,8 @@ static int build_member_list(void)
 		}
 	}
 
-	match_member_relations();
+	if (!res)
+		res = match_member_relations();
 
 	return res;
 }
@@ -780,6 +833,9 @@ static int parse_existing_config(const char *infile)
 		if (!strncasecmp(buf, "MENUSELECT_DEPENDS_", strlen("MENUSELECT_DEPENDS_")))
 			continue;
 
+		if (!strncasecmp(buf, "MENUSELECT_BUILD_DEPS", strlen("MENUSELECT_BUILD_DEPS")))
+			continue;
+
 		parse = buf;
 		parse = skip_blanks(parse);
 		if (strlen_zero(parse))
@@ -862,6 +918,8 @@ static int generate_makeopts_file(void)
 	FILE *f;
 	struct category *cat;
 	struct member *mem;
+	struct depend *dep;
+	struct use *use;
 
 	if (!(f = fopen(output_makeopts, "w"))) {
 		fprintf(stderr, "Unable to open build configuration file (%s) for writing!\n", output_makeopts);
@@ -878,6 +936,43 @@ static int generate_makeopts_file(void)
 		}
 		fprintf(f, "\n");
 	}
+
+	/* Traverse all categories and members, and for every member that is not disabled,
+	   if it has internal dependencies (other members), list those members one time only
+	   in a special variable */
+	fprintf(f, "MENUSELECT_BUILD_DEPS=");
+	AST_LIST_TRAVERSE(&categories, cat, list) {
+		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			if ((!cat->positive_output && (!mem->enabled || mem->depsfailed || mem->conflictsfailed)) ||
+			    (cat->positive_output && mem->enabled && !mem->depsfailed && !mem->conflictsfailed))
+				continue;
+
+			AST_LIST_TRAVERSE(&mem->deps, dep, list) {
+				/* we only care about dependencies between members (internal, not external) */
+				if (!dep->member)
+					continue;
+				/* if this has already been output, continue */
+				if (dep->member->build_deps_output)
+					continue;
+				fprintf(f, "%s ", dep->member->name);
+				dep->member->build_deps_output = 1;
+			}
+			AST_LIST_TRAVERSE(&mem->uses, use, list) {
+				/* we only care about dependencies between members (internal, not external) */
+				if (!use->member)
+					continue;
+				/* if the dependency module is not going to be built, don't list it */
+				if (!use->member->enabled)
+					continue;
+				/* if this has already been output, continue */
+				if (use->member->build_deps_output)
+					continue;
+				fprintf(f, "%s ", use->member->name);
+				use->member->build_deps_output = 1;
+			}
+		}
+	}
+	fprintf(f, "\n");
 
 	/* Output which members were disabled because of failed dependencies or conflicts */
 	AST_LIST_TRAVERSE(&categories, cat, list) {
@@ -1073,6 +1168,12 @@ static void process_defaults(void)
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!mem->defaultenabled)
+				continue;
+
+			if (mem->depsfailed == HARD_FAILURE)
+				continue;
+
+			if (mem->conflictsfailed == HARD_FAILURE)
 				continue;
 			
 			if (!strcasecmp(mem->defaultenabled, "yes")) {
