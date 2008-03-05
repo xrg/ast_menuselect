@@ -692,7 +692,7 @@ void toggle_enabled(struct member *mem)
 	else
 		mem->enabled = 0;
 
-					fprintf(stderr, "3- changed %s to %d\n", mem->name, mem->enabled);
+	print_debug("3- changed %s to %d\n", mem->name, mem->enabled);
 	mem->was_defaulted = 0;
 	changes_made++;
 

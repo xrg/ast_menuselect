@@ -29,6 +29,9 @@
 /* Define to indicate the ${NCURSES_DESCRIP} library */
 #undef HAVE_NCURSES
 
+/* Define to indicate the ${NEWT_DESCRIP} library */
+#undef HAVE_NEWT
+
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
 

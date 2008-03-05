@@ -6,7 +6,7 @@ CC=@CC@
 
 OSARCH=@HOST_OS@
 
-# The frontend can use curses, ncurses or gtk2
+# The frontend can use curses, ncurses, newt or gtk2
 
 CURSES_INCLUDE=@CURSES_INCLUDE@
 CURSES_LIB=@CURSES_LIB@
@@ -16,3 +16,6 @@ GTK2_LIB=@GTK2_LIB@
 
 NCURSES_INCLUDE=@NCURSES_INCLUDE@
 NCURSES_LIB=@NCURSES_LIB@
+
+NEWT_INCLUDE=@NEWT_INCLUDE@
+NEWT_LIB=@NEWT_LIB@

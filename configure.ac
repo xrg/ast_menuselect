@@ -45,11 +45,13 @@ AC_LANG(C)
 
 AC_CHECK_FUNCS([asprintf getloadavg setenv strcasestr strndup strnlen strsep strtoq unsetenv vasprintf])
 
-# The frontend can use curses, ncurses or GTK2 so check for all of them
+# The frontend can use curses, ncurses, newt or GTK2 so check for all of them
 
+AST_EXT_LIB_SETUP([NEWT], [newt], [newt])
 AST_EXT_LIB_SETUP([CURSES], [curses], [curses])
 AST_EXT_LIB_SETUP([NCURSES], [ncurses], [ncurses])
 
+AST_EXT_LIB_CHECK([NEWT], [newt], [newtBell], [newt.h])
 AST_EXT_LIB_CHECK([CURSES], [curses], [initscr], [curses.h])
 AST_EXT_LIB_CHECK([NCURSES], [ncurses], [initscr], [curses.h])
 
