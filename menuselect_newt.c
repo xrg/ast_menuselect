@@ -31,6 +31,9 @@
 
 #include "menuselect.h"
 
+#define MIN_X 80
+#define MIN_Y 21
+
 extern int changes_made;
 
 static newtComponent rootOptions;
@@ -238,14 +241,18 @@ int run_menu(void)
 	newtInit();
 	newtCls();
 	newtGetScreenSize(&x, &y);
-	newtPushHelpLine("  <ENTER> toggles current selection  |  <F10> saves & exits  |  <ESC> exits without save");
+
+	if (x < MIN_X || y < MIN_Y) {
+		newtFinished();
+		fprintf(stderr, "Terminal must be at least %d x %d.\n", MIN_X, MIN_Y);
+		return -1;
+	}
+
+	newtPushHelpLine("  <ENTER> toggles current selection  |  <F12> saves & exits  |  <ESC> exits without save");
 	newtRefresh();
 
 	newtCenteredWindow(x - 8, y - 7, menu_name);
 	form = newtForm(NULL, NULL, 0);
-
-	/* We'll use F10 for saving */
-	newtFormAddHotKey(form, NEWT_KEY_F10);
 
 	/* F8 for select all */
 	newtFormAddHotKey(form, NEWT_KEY_F8);
@@ -297,7 +304,7 @@ int run_menu(void)
 			int done = 1;
 
 			switch (es.u.key) {
-			case NEWT_KEY_F10:
+			case NEWT_KEY_F12:
 				res = 0;
 				break;
 			case NEWT_KEY_F7:
