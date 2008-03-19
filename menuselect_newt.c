@@ -248,7 +248,7 @@ int run_menu(void)
 		return -1;
 	}
 
-	newtPushHelpLine("  <ENTER> toggles current selection  |  <F12> saves & exits  |  <ESC> exits without save");
+	newtPushHelpLine("  <ENTER> toggles selection | <F12> saves & exits | <ESC> exits without save");
 	newtRefresh();
 
 	newtCenteredWindow(x - 8, y - 7, menu_name);
