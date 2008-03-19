@@ -124,19 +124,19 @@ static void print_debug(const char *format, ...)
 }
 
 /*! \brief Add a category to the category list, ensuring that there are no duplicates */
-static int add_category(struct category *cat)
+static struct category *add_category(struct category *cat)
 {
 	struct category *tmp;
 
 	AST_LIST_TRAVERSE(&categories, tmp, list) {
 		if (!strcmp(tmp->name, cat->name)) {
-			fprintf(stderr, "Category '%s' specified more than once!\n", cat->name);
-			return -1;
+			fprintf(stderr, "Category '%s' specified more than once - updating.\n", cat->name);
+			return tmp;
 		}
 	}
 	AST_LIST_INSERT_TAIL(&categories, cat, list);
 
-	return 0;
+	return cat;
 }
 
 /*! \brief Add a member to the member list of a category, ensuring that there are no duplicates */
@@ -175,7 +175,6 @@ static void free_member(struct member *mem)
 static int parse_tree(const char *tree_file)
 {
 	FILE *f;
-	struct category *cat;
 	struct tree *tree;
 	struct member *mem;
 	struct depend *dep;
@@ -212,21 +211,30 @@ static int parse_tree(const char *tree_file)
 	     cur;
 	     cur = mxmlFindElement(cur, menu, "category", NULL, NULL, MXML_DESCEND))
 	{
+		struct category *cat;
+		struct category *newcat;
+
 		if (!(cat = calloc(1, sizeof(*cat))))
 			return -1;
 
 		cat->name = mxmlElementGetAttr(cur, "name");
-		cat->displayname = mxmlElementGetAttr(cur, "displayname");
+
+		newcat = add_category(cat);
+
+		if (newcat != cat) {
+			/* want to append members, and potentially update the category. */
+			free(cat);
+			cat = newcat;
+		}
+
+		if ((tmp = mxmlElementGetAttr(cur, "displayname")))
+			cat->displayname = tmp;
 		if ((tmp = mxmlElementGetAttr(cur, "positive_output")))
 			cat->positive_output = !strcasecmp(tmp, "yes");
 		if ((tmp = mxmlElementGetAttr(cur, "exclusive")))
 			cat->exclusive = !strcasecmp(tmp, "yes");
-		cat->remove_on_change = mxmlElementGetAttr(cur, "remove_on_change");
-
-		if (add_category(cat)) {
-			free(cat);
-			continue;
-		}
+		if ((tmp = mxmlElementGetAttr(cur, "remove_on_change")))
+			cat->remove_on_change = tmp;
 
 		for (cur2 = mxmlFindElement(cur, cur, "member", NULL, NULL, MXML_DESCEND);
 		     cur2;
