@@ -130,7 +130,6 @@ static struct category *add_category(struct category *cat)
 
 	AST_LIST_TRAVERSE(&categories, tmp, list) {
 		if (!strcmp(tmp->name, cat->name)) {
-			fprintf(stderr, "Category '%s' specified more than once - updating.\n", cat->name);
 			return tmp;
 		}
 	}
