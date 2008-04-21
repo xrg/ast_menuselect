@@ -24,12 +24,12 @@ CFLAGS:=-g -c -D_GNU_SOURCE -Wall
 ifneq ($(NCURSES_LIB),)
   C_OBJS += menuselect_curses.o
   C_LIBS +=$(NCURSES_LIB)
-  C_INCLUDE += $(NCURSES_INCLUDE)
+  INCLUDE += $(NCURSES_INCLUDE)
 else
   ifneq ($(CURSES_LIB),)
     C_OBJS += menuselect_curses.o
     C_LIBS +=$(CURSES_LIB)
-    C_INCLUDE += $(CURSES_INCLUDE)
+    INCLUDE += $(CURSES_INCLUDE)
   endif
 endif
 
@@ -37,25 +37,25 @@ endif
 ifneq ($(GTK2_LIB),)
   G_OBJS += menuselect_gtk.o
   G_LIBS += $(GTK2_LIB)
-  G_INCLUDE += $(GTK2_INCLUDE)
+  INCLUDE += $(GTK2_INCLUDE)
 endif
 
 # Pick newt if available
 ifneq ($(NEWT_LIB),)
   N_OBJS += menuselect_newt.o
   N_LIBS += $(NEWT_LIB)
-  N_INCLUDE += $(NEWT_INCLUDE)
+  INCLUDE += $(NEWT_INCLUDE)
 endif
 
 ifneq ($(N_OBJS),)
   M_OBJS += $(N_OBJS)
   M_LIBS += $(N_LIBS)
-  M_INCLUDE += $(N_INCLUDE)
+  INCLUDE += $(N_INCLUDE)
 else
   ifneq ($(C_OBJS),)
     M_OBJS += $(C_OBJS)
     M_LIBS += $(C_LIBS)
-    M_INCLUDE += $(C_INCLUDE)
+    INCLUDE += $(C_INCLUDE)
   else
     M_OBJS += menuselect_stub.o
   endif
