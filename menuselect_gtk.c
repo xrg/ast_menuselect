@@ -260,7 +260,7 @@ int run_menu(void)
 		GtkTreeIter iter, iter2;
 		gtk_tree_store_append(store, &iter, NULL);
 		gtk_tree_store_set(store, &iter,
-			COLUMN_NAME, cat->name,
+			COLUMN_NAME, cat->displayname,
 			COLUMN_SELECTED, TRUE,
 			-1);
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
