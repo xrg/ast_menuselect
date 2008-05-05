@@ -639,13 +639,19 @@ static void mark_as_present(const char *member, const char *category)
 {
 	struct category *cat;
 	struct member *mem;
+	char negate = 0;
+
+	if (*member == '-') {
+		member++;
+		negate = 1;
+	}
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		if (strcmp(category, cat->name))
 			continue;
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!strcmp(member, mem->name)) {
-				mem->was_enabled = mem->enabled = cat->positive_output;
+				mem->was_enabled = mem->enabled = (negate ? !cat->positive_output : cat->positive_output);
 				break;
 			}
 		}
