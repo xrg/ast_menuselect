@@ -37,6 +37,7 @@ static gint nmenu_items = sizeof(menu_items) / sizeof(menu_items[0]);
 
 static GtkTreeView *tree;
 static GtkWidget *window;
+static GtkLabel *description;
 
 /* 0, save ... non-zero, don't save */
 static int main_res = 1;
@@ -308,8 +309,8 @@ int run_menu(void)
 	}
 
 	tree = (GtkTreeView *) gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	/* gtk_tree_view_set_grid_lines(tree, GTK_TREE_VIEW_GRID_LINES_BOTH); */
 	gtk_tree_view_set_enable_tree_lines(tree, TRUE);
-	gtk_tree_view_set_grid_lines(tree, GTK_TREE_VIEW_GRID_LINES_BOTH);
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Name",
@@ -340,6 +341,10 @@ int run_menu(void)
 	g_signal_connect(tree, "row-activated", (GCallback) row_activated_handler, store);
 
 	gtk_container_add(GTK_CONTAINER(s_window), GTK_WIDGET(tree));
+
+	description = (GtkLabel *) gtk_label_new("Hello there");
+
+	gtk_box_pack_end(GTK_BOX(main_vbox), (GtkWidget *) description, TRUE, TRUE, 0);
 
 	gtk_box_pack_end(GTK_BOX(main_vbox), s_window, TRUE, TRUE, 0);
 
