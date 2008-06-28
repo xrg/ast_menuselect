@@ -20,13 +20,13 @@
 OBJS:=menuselect.o strcompat.o
 CFLAGS:=-g -c -D_GNU_SOURCE -Wall
 
-ifneq ($(NCURSES_LIB),)
+ifdef NCURSES_LIB
   C_OBJS += menuselect_curses.o
   C_LIBS +=$(NCURSES_LIB)
   C_INCLUDE += $(NCURSES_INCLUDE)
   ALL_TGTS += cmenuselect
 else
-  ifneq ($(CURSES_LIB),)
+  ifdef CURSES_LIB
     C_OBJS += menuselect_curses.o
     C_LIBS +=$(CURSES_LIB)
     C_INCLUDE += $(CURSES_INCLUDE)
@@ -34,14 +34,14 @@ else
   endif
 endif
 
-ifneq ($(GTK2_LIB),)
+ifdef GTK2_LIB
   G_OBJS += menuselect_gtk.o
   G_LIBS += $(GTK2_LIB)
   G_INCLUDE += $(GTK2_INCLUDE)
   ALL_TGTS += gmenuselect
 endif
 
-ifneq ($(NEWT_LIB),)
+ifdef NEWT_LIB
   N_OBJS += menuselect_newt.o
   N_LIBS += $(NEWT_LIB)
   N_INCLUDE += $(NEWT_INCLUDE)
@@ -60,17 +60,29 @@ makeopts autoconfig.h: autoconfig.h.in makeopts.in
 
 $(ALL_TGTS): mxml/libmxml.a
 
+ifdef C_OBJS
 menuselect_curses.o: CFLAGS+=$(C_INCLUDE)
 cmenuselect: $(OBJS) $(C_OBJS)
 	$(CC) -o $@ $^ $(C_LIBS)
+else
+cmenuselect:
+endif
 
+ifdef G_OBJS
 menuselect_gtk.o: CFLAGS+=$(G_INCLUDE)
 gmenuselect: $(OBJS) $(G_OBJS)
 	$(CC) -o $@ $^ $(G_LIBS)
+else
+gmenuselect:
+endif
 
+ifdef N_OBJS
 menuselect_newt.o: CFLAGS+=$(N_INCLUDE)
 nmenuselect: $(OBJS) $(N_OBJS)
 	$(CC) -o $@ $^ $(N_LIBS)
+else
+nmenuselect:
+endif
 
 menuselect: $(OBJS) $(M_OBJS)
 	$(CC) -o $@ $^ $(M_LIBS)
