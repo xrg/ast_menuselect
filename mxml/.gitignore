@@ -1,0 +1,5 @@
+config.h
+config.status
+libmxml.a
+Makefile
+mxml.list

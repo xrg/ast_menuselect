@@ -40,7 +40,7 @@
 #define TITLE_HEIGHT	7
 
 #define MIN_X		80
-#define MIN_Y		24
+#define MIN_Y		21
 
 #define PAGE_OFFSET	10
 

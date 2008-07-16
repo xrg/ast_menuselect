@@ -3,7 +3,7 @@
 # 
 # Makefile for Menuselect
 #
-# Copyright (C) 2005-2008, Digium, Inc.
+# Copyright (C) 2005-2006, Digium, Inc.
 #
 # Russell Bryant <russell@digium.com>
 #
@@ -20,69 +20,66 @@
 OBJS:=menuselect.o strcompat.o
 CFLAGS:=-g -c -D_GNU_SOURCE -Wall
 
-ifdef NCURSES_LIB
+# Pick a curses library if available
+ifneq ($(NCURSES_LIB),)
   C_OBJS += menuselect_curses.o
   C_LIBS +=$(NCURSES_LIB)
   C_INCLUDE += $(NCURSES_INCLUDE)
-  ALL_TGTS += cmenuselect
 else
-  ifdef CURSES_LIB
+  ifneq ($(CURSES_LIB),)
     C_OBJS += menuselect_curses.o
     C_LIBS +=$(CURSES_LIB)
     C_INCLUDE += $(CURSES_INCLUDE)
-    ALL_TGTS += cmenuselect
   endif
 endif
 
-ifdef GTK2_LIB
+# Pick gtk library if available
+ifneq ($(GTK2_LIB),)
   G_OBJS += menuselect_gtk.o
   G_LIBS += $(GTK2_LIB)
   G_INCLUDE += $(GTK2_INCLUDE)
-  ALL_TGTS += gmenuselect
 endif
 
-ifdef NEWT_LIB
+# Pick newt if available
+ifneq ($(NEWT_LIB),)
   N_OBJS += menuselect_newt.o
   N_LIBS += $(NEWT_LIB)
   N_INCLUDE += $(NEWT_INCLUDE)
-  ALL_TGTS += nmenuselect
 endif
 
-M_OBJS += menuselect_stub.o
-ALL_TGTS += menuselect
+ifneq ($(N_OBJS),)
+  M_OBJS += $(N_OBJS)
+  M_LIBS += $(N_LIBS)
+else
+  ifneq ($(C_OBJS),)
+    M_OBJS += $(C_OBJS)
+    M_LIBS += $(C_LIBS)
+  else
+    M_OBJS += menuselect_stub.o
+  endif
+endif
 
-all: $(ALL_TGTS)
+all:
+	@$(MAKE) menuselect
 
-$(OBJS) $(C_OBJS) $(N_OBJS) $(G_OBJS) $(M_OBJS): autoconfig.h menuselect.h
+$(OBJS) menuselect_gtk.o menuselect_curses.o menuselect_stub.o: autoconfig.h menuselect.h
 
 makeopts autoconfig.h: autoconfig.h.in makeopts.in
 	@./configure $(CONFIGURE_SILENT) CC= LD= AR= CFLAGS=
 
-$(ALL_TGTS): mxml/libmxml.a
+menuselect cmenuselect gmenuselect nmenuselect: mxml/libmxml.a
 
-ifdef C_OBJS
 menuselect_curses.o: CFLAGS+=$(C_INCLUDE)
 cmenuselect: $(OBJS) $(C_OBJS)
 	$(CC) -o $@ $^ $(C_LIBS)
-else
-cmenuselect:
-endif
 
-ifdef G_OBJS
 menuselect_gtk.o: CFLAGS+=$(G_INCLUDE)
 gmenuselect: $(OBJS) $(G_OBJS)
 	$(CC) -o $@ $^ $(G_LIBS)
-else
-gmenuselect:
-endif
 
-ifdef N_OBJS
 menuselect_newt.o: CFLAGS+=$(N_INCLUDE)
 nmenuselect: $(OBJS) $(N_OBJS)
 	$(CC) -o $@ $^ $(N_LIBS)
-else
-nmenuselect:
-endif
 
 menuselect: $(OBJS) $(M_OBJS)
 	$(CC) -o $@ $^ $(M_LIBS)
