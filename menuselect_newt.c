@@ -47,21 +47,17 @@ static newtComponent dependsDataTextbox;
 static newtComponent usesDataTextbox;
 static newtComponent conflictsDataTextbox;
 
+static void build_members_menu(int overlay);
 static void root_menu_callback(newtComponent component, void *data);
-
 
 static void toggle_all_options(int select)
 {
 	struct category *cat = newtListboxGetCurrent(rootOptions);
-	struct member *mem = newtListboxGetCurrent(subOptions);
 
 	set_all(cat, select);
 
-	// Redraw
-	root_menu_callback(rootOptions, NULL);
-
-	// Set our selection back
-	newtListboxSetCurrentByKey(subOptions, mem);
+	/* Redraw */
+	build_members_menu(1);
 
 	return;
 }
@@ -72,11 +68,8 @@ static void toggle_selected_option()
 
 	toggle_enabled(mem);
 
-	// Redraw the menu
-	root_menu_callback(rootOptions, NULL);
-
-	// Set our selection back to what it should be
-	newtListboxSetCurrentByKey(subOptions, mem);
+	/* Redraw */
+	build_members_menu(1);
 
 	return;
 }
@@ -145,15 +138,17 @@ static void display_member_info(struct member *mem)
 	return;
 }
 
-static void build_members_menu()
+static void build_members_menu(int overlay)
 {
 	struct category *cat;
 	struct member *mem;
 	char buf[64];
+	int i = 0;
 
-	reset_display();
-
-	newtListboxClear(subOptions);
+	if (!overlay) {
+		reset_display();
+		newtListboxClear(subOptions);
+	}
 
 	cat = newtListboxGetCurrent(rootOptions);
 
@@ -169,10 +164,18 @@ static void build_members_menu()
 			snprintf(buf, sizeof(buf), "[%s] %s", mem->enabled ? "*" : " ", mem->name);
 		}
 
-		newtListboxAppendEntry(subOptions, buf, mem);
+		if (overlay) {
+			newtListboxSetEntry(subOptions, i, buf);
+		} else {
+			newtListboxAppendEntry(subOptions, buf, mem);
+		}
+
+		i++;
 	}
 
-	display_member_info(AST_LIST_FIRST(&cat->members));
+	if (!overlay) {
+		display_member_info(AST_LIST_FIRST(&cat->members));
+	}
 
 	return;
 }
@@ -204,7 +207,7 @@ static void category_menu_callback(newtComponent component, void *data)
 
 static void root_menu_callback(newtComponent component, void *data)
 {
-	build_members_menu();
+	build_members_menu(0);
 }
 
 int run_confirmation_dialog(int *result)
@@ -335,8 +338,10 @@ int run_menu(void)
 	}
 
 	/* Cleanup */
+	reset_display();
 	newtFormDestroy(form);
 	newtPopWindow();
+	newtPopHelpLine();
 	newtCls();
 	newtFinished();
 
