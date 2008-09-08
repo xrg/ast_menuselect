@@ -160,10 +160,7 @@ static void draw_main_menu(WINDOW *menu, int curopt)
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		wmove(menu, i++, max_x / 2 - 10);
-		if (!strlen_zero(cat->displayname))
-			snprintf(buf, sizeof(buf), "%d.%s %s", i, i < 10 ? " " : "", cat->displayname);
-		else
-			snprintf(buf, sizeof(buf), "%d.%s %s", i, i < 10 ? " " : "", cat->name);
+		snprintf(buf, sizeof(buf), " %s", strlen_zero(cat->displayname) ? cat->name : cat->displayname);
 		waddstr(menu, buf);
 	}
 
@@ -263,13 +260,13 @@ static void draw_category_menu(WINDOW *menu, struct category *cat, int start, in
 		wmove(menu, j++, max_x / 2 - 10);
 		i++;
 		if ((mem->depsfailed == HARD_FAILURE) || (mem->conflictsfailed == HARD_FAILURE)) {
-			snprintf(buf, sizeof(buf), "XXX %d.%s %s", i, i < 10 ? " " : "", mem->name);
+			snprintf(buf, sizeof(buf), "XXX %s", mem->name);
 		} else if (mem->depsfailed == SOFT_FAILURE) {
-			snprintf(buf, sizeof(buf), "<%s> %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+			snprintf(buf, sizeof(buf), "<%s> %s", mem->enabled ? "*" : " ", mem->name);
 		} else if (mem->conflictsfailed == SOFT_FAILURE) {
-			snprintf(buf, sizeof(buf), "(%s) %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+			snprintf(buf, sizeof(buf), "(%s) %s", mem->enabled ? "*" : " ", mem->name);
 		} else {
-			snprintf(buf, sizeof(buf), "[%s] %d.%s %s", mem->enabled ? "*" : " ", i, i < 10 ? " " : "", mem->name);
+			snprintf(buf, sizeof(buf), "[%s] %s", mem->enabled ? "*" : " ", mem->name);
 		}
 		waddstr(menu, buf);
 		
