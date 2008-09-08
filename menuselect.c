@@ -1126,6 +1126,8 @@ void set_all(struct category *cat, int val)
 		mem->was_defaulted = 0;
 		changes_made++;
 	}
+
+	while (calc_dep_failures(1) || calc_conflict_failures(1));
 }
 
 int count_categories(void)
