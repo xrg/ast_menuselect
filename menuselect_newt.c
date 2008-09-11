@@ -48,6 +48,7 @@ static newtComponent usesDataTextbox;
 static newtComponent conflictsDataTextbox;
 
 static newtComponent exitButton;
+static newtComponent saveAndExitButton;
 
 static void build_members_menu(int overlay);
 static void root_menu_callback(newtComponent component, void *data);
@@ -286,6 +287,7 @@ int run_menu(void)
 	conflictsDataTextbox = newtTextbox(18, y - 9, x - 27, 1, 0);
 
 	exitButton = newtButton(x - 23, y - 11, "  Exit  ");
+	saveAndExitButton = newtButton(x - 43, y - 11, " Save & Exit ");
 
 	newtFormAddComponents(
 		form,
@@ -296,6 +298,7 @@ int run_menu(void)
 		usesDataTextbox,
 		conflictsLabel,
 		conflictsDataTextbox,
+		saveAndExitButton,
 		exitButton,
 		NULL);
 
@@ -339,7 +342,10 @@ int run_menu(void)
 				break;
 			}
 		} else if (es.reason == NEWT_EXIT_COMPONENT) {
-			if (es.u.co == exitButton) {
+			if (es.u.co == saveAndExitButton) {
+				res = 0;
+				break;
+			} else if (es.u.co == exitButton) {
 				int done = 1;
 
 				if (changes_made) {
