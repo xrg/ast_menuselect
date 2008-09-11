@@ -47,6 +47,8 @@ static newtComponent dependsDataTextbox;
 static newtComponent usesDataTextbox;
 static newtComponent conflictsDataTextbox;
 
+static newtComponent exitButton;
+
 static void build_members_menu(int overlay);
 static void root_menu_callback(newtComponent component, void *data);
 
@@ -265,12 +267,12 @@ int run_menu(void)
 
 	newtFormSetTimer(form, 200);
 
-	rootOptions = newtListbox(2, 1, y - 16, 0);
+	rootOptions = newtListbox(2, 1, y - 15, 0);
 	newtListboxSetWidth(rootOptions, 29);
 	newtFormAddComponent(form, rootOptions);
 	newtComponentAddCallback(rootOptions, root_menu_callback, NULL);
 
-	subOptions = newtListbox(33, 1, y - 16, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
+	subOptions = newtListbox(33, 1, y - 15, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
 	newtListboxSetWidth(subOptions, x - 42);
 	newtFormAddComponent(form, subOptions);
 	newtComponentAddCallback(subOptions, category_menu_callback, NULL);
@@ -283,6 +285,8 @@ int run_menu(void)
 	usesDataTextbox      = newtTextbox(18, y - 10, x - 27, 1, 0);
 	conflictsDataTextbox = newtTextbox(18, y - 9, x - 27, 1, 0);
 
+	exitButton = newtButton(x - 23, y - 11, "  Exit  ");
+
 	newtFormAddComponents(
 		form,
 		memberNameTextbox,
@@ -292,6 +296,7 @@ int run_menu(void)
 		usesDataTextbox,
 		conflictsLabel,
 		conflictsDataTextbox,
+		exitButton,
 		NULL);
 
 	build_main_menu();
@@ -330,10 +335,25 @@ int run_menu(void)
 				break;
 			}
 
-			if (done)
+			if (done) {
 				break;
+			}
 		} else if (es.reason == NEWT_EXIT_COMPONENT) {
-			toggle_selected_option();
+			if (es.u.co == exitButton) {
+				int done = 1;
+
+				if (changes_made) {
+					done = run_confirmation_dialog(&res);
+				} else {
+					res = -1;
+				}
+
+				if (done) {
+					break;
+				}
+			} else if (es.u.co == subOptions) {
+				toggle_selected_option();
+			}
 		}
 	}
 
