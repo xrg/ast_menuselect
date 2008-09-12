@@ -308,8 +308,11 @@ int run_menu(void)
 	}
 
 	tree = (GtkTreeView *) gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+
+#if GTK_CHECK_VERSION(2,10,0)
 	gtk_tree_view_set_enable_tree_lines(tree, TRUE);
 	gtk_tree_view_set_grid_lines(tree, GTK_TREE_VIEW_GRID_LINES_BOTH);
+#endif
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Name",
