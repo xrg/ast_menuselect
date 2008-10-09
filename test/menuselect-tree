@@ -22,13 +22,13 @@
 <member name="app_controlplayback" displayname="Control Playback Application" remove_on_change="apps/app_controlplayback.o apps/app_controlplayback.so">
 </member>
 <member name="app_dahdibarge" displayname="Barge in on DAHDI channel application" remove_on_change="apps/app_dahdibarge.o apps/app_dahdibarge.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="app_dahdiras" displayname="DAHDI ISDN Remote Access Server" remove_on_change="apps/app_dahdiras.o apps/app_dahdiras.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="app_dahdiscan" displayname="Scan DAHDI channels application" remove_on_change="apps/app_dahdiscan.o apps/app_dahdiscan.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="app_db" displayname="Database Access Functions" remove_on_change="apps/app_db.o apps/app_db.so">
 </member>
@@ -58,7 +58,7 @@
 <member name="app_festival" displayname="Simple Festival Interface" remove_on_change="apps/app_festival.o apps/app_festival.so">
 </member>
 <member name="app_flash" displayname="Flash channel application" remove_on_change="apps/app_flash.o apps/app_flash.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="app_followme" displayname="Find-Me/Follow-Me Application" remove_on_change="apps/app_followme.o apps/app_followme.so">
 	<depend>chan_local</depend>
@@ -76,7 +76,7 @@
 </member>
 <member name="app_jack" displayname="JACK Interface" remove_on_change="apps/app_jack.o apps/app_jack.so">
 	<depend>jack</depend>
-	<depend>resample</depend>
+	<depend name="resample">libresample</depend>
 </member>
 <member name="app_macro" displayname="Extension Macros" remove_on_change="apps/app_macro.o apps/app_macro.so">
 </member>
@@ -101,7 +101,7 @@
 	<depend>ssl</depend>
 </member>
 <member name="app_page" displayname="Page Multiple Phones" remove_on_change="apps/app_page.o apps/app_page.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 	<depend>app_meetme</depend>
 </member>
 <member name="app_parkandannounce" displayname="Call Parking and Announce Application" remove_on_change="apps/app_parkandannounce.o apps/app_parkandannounce.so">
@@ -122,7 +122,7 @@
 <member name="app_record" displayname="Trivial Record Application" remove_on_change="apps/app_record.o apps/app_record.so">
 </member>
 <member name="app_rpt" displayname="Radio Repeater/Remote Base Application" remove_on_change="apps/app_rpt.o apps/app_rpt.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 	<depend>tonezone</depend>
 	<defaultenabled>no</defaultenabled>
 </member>
@@ -175,7 +175,7 @@
 </category>
 <category name="MENUSELECT_CDR" displayname="Call Detail Recording" remove_on_change="cdr/modules.link">
 <member name="cdr_adaptive_odbc" displayname="Adaptive ODBC CDR backend" remove_on_change="cdr/cdr_adaptive_odbc.o cdr/cdr_adaptive_odbc.so">
-	<depend>unixodbc</depend>
+	<depend name="unixODBC">unixodbc</depend>
 </member>
 <member name="cdr_csv" displayname="Comma Separated Values CDR Backend" remove_on_change="cdr/cdr_csv.o cdr/cdr_csv.so">
 </member>
@@ -184,11 +184,11 @@
 <member name="cdr_manager" displayname="Asterisk Manager Interface CDR Backend" remove_on_change="cdr/cdr_manager.o cdr/cdr_manager.so">
 </member>
 <member name="cdr_odbc" displayname="ODBC CDR Backend" remove_on_change="cdr/cdr_odbc.o cdr/cdr_odbc.so">
-	<depend>unixodbc</depend>
-	<depend>ltdl</depend>
+	<depend name="unixodbc">unixODBC</depend>
+	<depend name="ltdl">libtool-ltdl</depend>
 </member>
 <member name="cdr_pgsql" displayname="PostgreSQL CDR Backend" remove_on_change="cdr/cdr_pgsql.o cdr/cdr_pgsql.so">
-	<depend>pgsql</depend>
+	<depend name="pgsql">PostgreSQL</depend>
 </member>
 <member name="cdr_radius" displayname="RADIUS CDR Backend" remove_on_change="cdr/cdr_radius.o cdr/cdr_radius.so">
 	<depend>radius</depend>
@@ -200,7 +200,7 @@
 	<depend>sqlite</depend>
 </member>
 <member name="cdr_tds" displayname="FreeTDS CDR Backend" remove_on_change="cdr/cdr_tds.o cdr/cdr_tds.so">
-	<depend>freetds</depend>
+	<depend name="freetds">FreeTDS</depend>
 </member>
 </category>
 <category name="MENUSELECT_CHANNELS" displayname="Channel Drivers" remove_on_change="channels/modules.link">
@@ -215,7 +215,7 @@
 </member>
 <member name="chan_dahdi" displayname="DAHDI Telephony" remove_on_change="channels/chan_dahdi.o channels/chan_dahdi.so">
 	<depend>res_smdi</depend>
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 	<depend>tonezone</depend>
 	<use>pri</use>
 	<use>ss7</use>
@@ -282,7 +282,7 @@
 <member name="codec_a_mu" displayname="A-law and Mulaw direct Coder/Decoder" remove_on_change="codecs/codec_a_mu.o codecs/codec_a_mu.so">
 </member>
 <member name="codec_dahdi" displayname="Generic DAHDI Transcoder Codec Translator" remove_on_change="codecs/codec_dahdi.o codecs/codec_dahdi.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="codec_g722" displayname="ITU G.722-64kbps G722 Transcoder" remove_on_change="codecs/codec_g722.o codecs/codec_g722.so">
 </member>
@@ -517,7 +517,7 @@
 <member name="res_speech" displayname="Generic Speech Recognition API" remove_on_change="res/res_speech.o res/res_speech.so">
 </member>
 <member name="res_timing_dahdi" displayname="DAHDI Timing Interface" remove_on_change="res/res_timing_dahdi.o res/res_timing_dahdi.so">
-	<depend>dahdi</depend>
+	<depend name="dahdi">DAHDI</depend>
 </member>
 <member name="res_timing_pthread" displayname="pthread Timing Interface" remove_on_change="res/res_timing_pthread.o res/res_timing_pthread.so">
 </member>

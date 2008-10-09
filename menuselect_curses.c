@@ -195,7 +195,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 		wmove(menu, end - start + 3, max_x / 2 - 16);
 		strcpy(buf, "Depends on: ");
 		AST_LIST_TRAVERSE(&mem->deps, dep, list) {
-			strncat(buf, dep->name, sizeof(buf) - strlen(buf) - 1);
+			strncat(buf, dep->displayname, sizeof(buf) - strlen(buf) - 1);
 			strncat(buf, dep->member ? "(M)" : "(E)", sizeof(buf) - strlen(buf) - 1);
 			if (AST_LIST_NEXT(dep, list))
 				strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
@@ -206,7 +206,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 		wmove(menu, end - start + 4, max_x / 2 - 16);
 		strcpy(buf, "Can use: ");
 		AST_LIST_TRAVERSE(&mem->uses, use, list) {
-			strncat(buf, use->name, sizeof(buf) - strlen(buf) - 1);
+			strncat(buf, use->displayname, sizeof(buf) - strlen(buf) - 1);
 			strncat(buf, use->member ? "(M)" : "(E)", sizeof(buf) - strlen(buf) - 1);
 			if (AST_LIST_NEXT(use, list))
 				strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);
@@ -217,7 +217,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 		wmove(menu, end - start + 5, max_x / 2 - 16);
 		strcpy(buf, "Conflicts with: ");
 		AST_LIST_TRAVERSE(&mem->conflicts, con, list) {
-			strncat(buf, con->name, sizeof(buf) - strlen(buf) - 1);
+			strncat(buf, con->displayname, sizeof(buf) - strlen(buf) - 1);
 			strncat(buf, con->member ? "(M)" : "(E)", sizeof(buf) - strlen(buf) - 1);
 			if (AST_LIST_NEXT(con, list))
 				strncat(buf, ", ", sizeof(buf) - strlen(buf) - 1);

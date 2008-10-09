@@ -206,9 +206,9 @@ static int parse_tree(const char *tree_file)
 	menu = mxmlFindElement(tree->root, tree->root, "menu", NULL, NULL, MXML_DESCEND);
 	if ((tmp = mxmlElementGetAttr(menu, "name")))
 		menu_name = tmp;
-	for (cur = mxmlFindElement(menu, menu, "category", NULL, NULL, MXML_DESCEND);
+	for (cur = mxmlFindElement(menu, menu, "category", NULL, NULL, MXML_DESCEND_FIRST);
 	     cur;
-	     cur = mxmlFindElement(cur, menu, "category", NULL, NULL, MXML_DESCEND))
+	     cur = mxmlFindElement(cur, menu, "category", NULL, NULL, MXML_NO_DESCEND))
 	{
 		struct category *cat;
 		struct category *newcat;
@@ -235,9 +235,9 @@ static int parse_tree(const char *tree_file)
 		if ((tmp = mxmlElementGetAttr(cur, "remove_on_change")))
 			cat->remove_on_change = tmp;
 
-		for (cur2 = mxmlFindElement(cur, cur, "member", NULL, NULL, MXML_DESCEND);
+		for (cur2 = mxmlFindElement(cur, cur, "member", NULL, NULL, MXML_DESCEND_FIRST);
 		     cur2;
-		     cur2 = mxmlFindElement(cur2, cur, "member", NULL, NULL, MXML_DESCEND))
+		     cur2 = mxmlFindElement(cur2, cur, "member", NULL, NULL, MXML_NO_DESCEND))
 		{
 			if (!(mem = calloc(1, sizeof(*mem))))
 				return -1;
@@ -254,46 +254,70 @@ static int parse_tree(const char *tree_file)
 			if (cur3 && cur3->child)
 				mem->defaultenabled = cur3->child->value.opaque;
 			
-			for (cur3 = mxmlFindElement(cur2, cur2, "depend", NULL, NULL, MXML_DESCEND);
+			for (cur3 = mxmlFindElement(cur2, cur2, "depend", NULL, NULL, MXML_DESCEND_FIRST);
 			     cur3 && cur3->child;
-			     cur3 = mxmlFindElement(cur3, cur2, "depend", NULL, NULL, MXML_DESCEND))
+			     cur3 = mxmlFindElement(cur3, cur2, "depend", NULL, NULL, MXML_NO_DESCEND))
 			{
 				if (!(dep = calloc(1, sizeof(*dep)))) {
 					free_member(mem);
 					return -1;
 				}
+				if ((tmp = mxmlElementGetAttr(cur3, "name"))) {
+					if (!strlen_zero(tmp)) {
+						dep->name = tmp;
+					}
+				}				
 				if (!strlen_zero(cur3->child->value.opaque)) {
-					dep->name = cur3->child->value.opaque;
+					dep->displayname = cur3->child->value.opaque;
+					if (!dep->name) {
+						dep->name = dep->displayname;
+					}
 					AST_LIST_INSERT_TAIL(&mem->deps, dep, list);
 				} else
 					free(dep);
 			}
 
-			for (cur3 = mxmlFindElement(cur2, cur2, "conflict", NULL, NULL, MXML_DESCEND);
+			for (cur3 = mxmlFindElement(cur2, cur2, "conflict", NULL, NULL, MXML_DESCEND_FIRST);
 			     cur3 && cur3->child;
-			     cur3 = mxmlFindElement(cur3, cur2, "conflict", NULL, NULL, MXML_DESCEND))
+			     cur3 = mxmlFindElement(cur3, cur2, "conflict", NULL, NULL, MXML_NO_DESCEND))
 			{
 				if (!(cnf = calloc(1, sizeof(*cnf)))) {
 					free_member(mem);
 					return -1;
 				}
+				if ((tmp = mxmlElementGetAttr(cur3, "name"))) {
+					if (!strlen_zero(tmp)) {
+						cnf->name = tmp;
+					}
+				}
 				if (!strlen_zero(cur3->child->value.opaque)) {
-					cnf->name = cur3->child->value.opaque;
+					cnf->displayname = cur3->child->value.opaque;
+					if (!cnf->name) {
+						cnf->name = cnf->displayname;
+					}					
 					AST_LIST_INSERT_TAIL(&mem->conflicts, cnf, list);
 				} else
 					free(cnf);
 			}
 
-			for (cur3 = mxmlFindElement(cur2, cur2, "use", NULL, NULL, MXML_DESCEND);
+			for (cur3 = mxmlFindElement(cur2, cur2, "use", NULL, NULL, MXML_DESCEND_FIRST);
 			     cur3 && cur3->child;
-			     cur3 = mxmlFindElement(cur3, cur2, "use", NULL, NULL, MXML_DESCEND))
+			     cur3 = mxmlFindElement(cur3, cur2, "use", NULL, NULL, MXML_NO_DESCEND))
 			{
 				if (!(use = calloc(1, sizeof(*use)))) {
 					free_member(mem);
 					return -1;
 				}
+				if ((tmp = mxmlElementGetAttr(cur3, "name"))) {
+					if (!strlen_zero(tmp)) {
+						use->name = tmp;
+					}
+				}
 				if (!strlen_zero(cur3->child->value.opaque)) {
-					use->name = cur3->child->value.opaque;
+					use->displayname = cur3->child->value.opaque;
+					if (!use->name) {
+						use->name = use->displayname;
+					}
 					AST_LIST_INSERT_TAIL(&mem->uses, use, list);
 				} else
 					free(use);

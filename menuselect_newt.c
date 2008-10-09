@@ -105,7 +105,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->deps, dep, list) {
-			strncat(buffer, dep->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, dep->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			strncat(buffer, dep->member ? "(M)" : "(E)", sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(dep, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
@@ -118,7 +118,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->uses, uses, list) {
-			strncat(buffer, uses->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, uses->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(uses, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
 		}
@@ -130,7 +130,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->conflicts, con, list) {
-			strncat(buffer, con->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, con->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			strncat(buffer, con->member ? "(M)" : "(E)", sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(con, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
