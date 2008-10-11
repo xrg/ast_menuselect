@@ -20,6 +20,10 @@
 OBJS:=menuselect.o strcompat.o
 CFLAGS:=-g -c -D_GNU_SOURCE -Wall
 
+ifeq ($(MENUSELECT_DEBUG),yes)
+  CFLAGS += -DMENUSELECT_DEBUG
+endif
+
 ifdef NCURSES_LIB
   C_OBJS += menuselect_curses.o
   C_LIBS +=$(NCURSES_LIB)

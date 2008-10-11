@@ -34,7 +34,6 @@
 #include "linkedlists.h"
 #include "menuselect.h"
 
-#undef MENUSELECT_DEBUG
 #ifdef MENUSELECT_DEBUG
 static FILE *debug;
 #endif
@@ -110,6 +109,17 @@ static inline char *skip_blanks(char *str)
 	return str;
 }
 
+static int open_debug(void)
+{
+#ifdef MENUSELECT_DEBUG
+	if (!(debug = fopen("menuselect_debug.txt", "w"))) {
+		fprintf(stderr, "Failed to open menuselect_debug.txt for debug output.\n");
+		return -1;
+	}
+#endif
+	return 0;
+}
+
 static void print_debug(const char *format, ...)
 {
 #ifdef MENUSELECT_DEBUG
@@ -120,6 +130,14 @@ static void print_debug(const char *format, ...)
 	va_end(ap);
 
 	fflush(debug);
+#endif
+}
+
+static void close_debug(void)
+{
+#ifdef MENUSELECT_DEBUG
+	if (debug)
+		fclose(debug);
 #endif
 }
 
@@ -850,10 +868,8 @@ static int parse_existing_config(const char *infile)
 	int lineno = 0;
 
 	if (!(f = fopen(infile, "r"))) {
-#ifdef MENUSELECT_DEBUG
 		/* This isn't really an error, so only print the message in debug mode */
-		fprintf(stderr, "Unable to open '%s' for reading existing config.\n", infile);
-#endif	
+		print_debug("Unable to open '%s' for reading existing config.\n", infile);
 		return -1;
 	}
 
@@ -1066,10 +1082,10 @@ static int generate_makeopts_file(void)
 	return 0;
 }
 
-#ifdef MENUSELECT_DEBUG
 /*! \brief Print out all of the information contained in our tree */
 static void dump_member_list(void)
 {
+#ifdef MENUSELECT_DEBUG
 	struct category *cat;
 	struct member *mem;
 	struct depend *dep;
@@ -1092,8 +1108,8 @@ static void dump_member_list(void)
 				fprintf(stderr, "      --> Conflicts Found: %s\n", mem->conflictsfailed ? "Yes" : "No");
 		}
 	}
-}
 #endif
+}
 
 /*! \brief Free all categories and their members */
 static void free_member_list(void)
@@ -1236,15 +1252,9 @@ int main(int argc, char *argv[])
 	int res = 0;
 	unsigned int x;
 
-	/* Make the compiler happy */
-	print_debug("");
-
-#ifdef MENUSELECT_DEBUG
-	if (!(debug = fopen("menuselect_debug.txt", "w"))) {
-		fprintf(stderr, "Failed to open menuselect_debug.txt for debug output.\n");
+	if (open_debug()) {
 		exit(1);
 	}
-#endif
 
 	/* Parse the input XML files to build the list of available options */
 	if ((res = build_member_list()))
@@ -1272,10 +1282,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-#ifdef MENUSELECT_DEBUG
 	/* Dump the list produced by parsing the various input files */
 	dump_member_list();
-#endif
 
 	while (calc_dep_failures(0) || calc_conflict_failures(0));
 
@@ -1302,10 +1310,7 @@ int main(int argc, char *argv[])
 	free_trees();
 	free_member_list();
 
-#ifdef MENUSELECT_DEBUG
-	if (debug)
-		fclose(debug);
-#endif
+	close_debug();
 
 	exit(res);
 }
