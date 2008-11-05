@@ -1247,19 +1247,77 @@ static int sanity_check(void)
 {
 	struct category *cat;
 	struct member *mem;
+	struct depend *dep;
+	struct use *use;
+	unsigned int header_printed;
+
+	AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
+		if (!((dep_file->previously_met == DEP_FILE_MET) &&
+		      (dep_file->met == DEP_FILE_UNMET))) {
+			continue;
+		}
+		/* this dependency was previously met, but now is not, so
+		   warn the user about members that could be affected by it
+		*/
+		fprintf(stderr, "\n"
+			"***********************************************************\n"
+			"  The '%s' dependency was previously satisfied but         \n"
+			"  is now unsatisfied.                                      \n",
+			dep_file->name);
+
+		header_printed = 0;
+		AST_LIST_TRAVERSE(&categories, cat, list) {
+			AST_LIST_TRAVERSE(&cat->members, mem, list) {
+				AST_LIST_TRAVERSE(&mem->deps, dep, list) {
+					if (strcasecmp(dep->name, dep_file->name)) {
+						continue;
+					}
+					if (!header_printed) {
+						fprintf(stderr, "\n"
+							"  The following modules will no longer be available:\n");
+						header_printed = 1;
+					}
+					fprintf(stderr, "          %s\n", mem->name);
+				}
+			}
+		}
+
+		header_printed = 0;
+		AST_LIST_TRAVERSE(&categories, cat, list) {
+			AST_LIST_TRAVERSE(&cat->members, mem, list) {
+				AST_LIST_TRAVERSE(&mem->uses, use, list) {
+					if (strcasecmp(use->name, dep_file->name)) {
+						continue;
+					}
+					if (!header_printed) {
+						fprintf(stderr, "\n"
+							"  The functionality of the following modules will\n"
+							"  be affected:\n");
+						header_printed = 1;
+					}
+					fprintf(stderr, "          %s\n", mem->name);
+				}
+			}
+		}
+
+		fprintf(stderr,
+			"***********************************************************\n");
+	}
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if ((mem->depsfailed || mem->conflictsfailed) && mem->enabled) {
-				fprintf(stderr, "\n***********************************************************\n"
-				                "  The existing menuselect.makeopts file did not specify    \n"
-				                "  that '%s' should not be included.  However, either some  \n"
-				                "  dependencies for this module were not found or a         \n"
-				                "  conflict exists.                                         \n"
-				                "                                                           \n"
-				                "  Either run 'make menuselect' or remove the existing      \n"
-				                "  menuselect.makeopts file to resolve this issue.          \n"
-						"***********************************************************\n\n", mem->name);
+				fprintf(stderr, "\n"
+					"***********************************************************\n"
+					"  The existing menuselect.makeopts file did not specify    \n"
+					"  that '%s' should not be included.  However, either some  \n"
+					"  dependencies for this module were not found or a         \n"
+					"  conflict exists.                                         \n"
+					"                                                           \n"
+					"  Either run 'make menuselect' or remove the existing      \n"
+					"  menuselect.makeopts file to resolve this issue.          \n"
+					"***********************************************************\n"
+					"\n", mem->name);
 				return -1;
 			}
 		}
