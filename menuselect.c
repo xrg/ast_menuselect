@@ -1245,6 +1245,7 @@ int count_members(struct category *cat)
 /*! \brief Make sure an existing menuselect.makeopts disabled everything it should have */
 static int sanity_check(void)
 {
+	unsigned int insane = 0;
 	struct category *cat;
 	struct member *mem;
 	struct depend *dep;
@@ -1278,6 +1279,7 @@ static int sanity_check(void)
 						header_printed = 1;
 					}
 					fprintf(stderr, "          %s\n", mem->name);
+					insane = 1;
 				}
 			}
 		}
@@ -1296,6 +1298,7 @@ static int sanity_check(void)
 						header_printed = 1;
 					}
 					fprintf(stderr, "          %s\n", mem->name);
+					insane = 1;
 				}
 			}
 		}
@@ -1318,11 +1321,12 @@ static int sanity_check(void)
 					"  menuselect.makeopts file to resolve this issue.          \n"
 					"***********************************************************\n"
 					"\n", mem->name);
-				return -1;
+				insane = 1;
 			}
 		}
 	}
-	return 0;	/* all good... */
+
+	return insane ? -1 : 0;
 }
 
 /* \brief Set the forced default values if they exist */
