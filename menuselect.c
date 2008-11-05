@@ -1250,33 +1250,47 @@ static int sanity_check(void)
 	struct member *mem;
 	struct depend *dep;
 	struct use *use;
-	unsigned int header_printed;
+	unsigned int dep_header_printed;
+	unsigned int group_header_printed;
+
+	void print_dep_header(void) {
+		fprintf(stderr, "\n"
+			"***********************************************************\n"
+			"  The '%s' dependency was previously satisfied but         \n"
+			"  is now unsatisfied.                                      \n",
+			dep_file->name);
+		dep_header_printed = 1;
+	}
 
 	AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
 		if (!((dep_file->previously_met == DEP_FILE_MET) &&
 		      (dep_file->met == DEP_FILE_UNMET))) {
 			continue;
 		}
+
 		/* this dependency was previously met, but now is not, so
 		   warn the user about members that could be affected by it
 		*/
-		fprintf(stderr, "\n"
-			"***********************************************************\n"
-			"  The '%s' dependency was previously satisfied but         \n"
-			"  is now unsatisfied.                                      \n",
-			dep_file->name);
 
-		header_printed = 0;
+		dep_header_printed = 0;
+
+		group_header_printed = 0;
 		AST_LIST_TRAVERSE(&categories, cat, list) {
 			AST_LIST_TRAVERSE(&cat->members, mem, list) {
+				if (!mem->enabled) {
+					continue;
+				}
 				AST_LIST_TRAVERSE(&mem->deps, dep, list) {
 					if (strcasecmp(dep->name, dep_file->name)) {
 						continue;
 					}
-					if (!header_printed) {
+					if (!group_header_printed) {
+						if (!dep_header_printed) {
+							print_dep_header();
+						}
 						fprintf(stderr, "\n"
 							"  The following modules will no longer be available:\n");
-						header_printed = 1;
+						group_header_printed = 1;
 					}
 					fprintf(stderr, "          %s\n", mem->name);
 					insane = 1;
@@ -1284,18 +1298,24 @@ static int sanity_check(void)
 			}
 		}
 
-		header_printed = 0;
+		group_header_printed = 0;
 		AST_LIST_TRAVERSE(&categories, cat, list) {
 			AST_LIST_TRAVERSE(&cat->members, mem, list) {
+				if (!mem->enabled) {
+					continue;
+				}
 				AST_LIST_TRAVERSE(&mem->uses, use, list) {
 					if (strcasecmp(use->name, dep_file->name)) {
 						continue;
 					}
-					if (!header_printed) {
+					if (!group_header_printed) {
+						if (!dep_header_printed) {
+							print_dep_header();
+						}
 						fprintf(stderr, "\n"
 							"  The functionality of the following modules will\n"
 							"  be affected:\n");
-						header_printed = 1;
+						group_header_printed = 1;
 					}
 					fprintf(stderr, "          %s\n", mem->name);
 					insane = 1;
@@ -1303,8 +1323,10 @@ static int sanity_check(void)
 			}
 		}
 
-		fprintf(stderr,
-			"***********************************************************\n");
+		if (dep_header_printed) {
+			fprintf(stderr,
+				"***********************************************************\n");
+		}
 	}
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
