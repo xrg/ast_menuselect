@@ -1242,6 +1242,16 @@ int count_members(struct category *cat)
 	return count;		
 }
 
+static void print_sanity_dep_header(unsigned int *flag)
+{
+	fprintf(stderr, "\n"
+		"***********************************************************\n"
+		"  The '%s' dependency was previously satisfied but         \n"
+		"  is now unsatisfied.                                      \n",
+		dep_file->name);
+	*flag = 1;
+}
+
 /*! \brief Make sure an existing menuselect.makeopts disabled everything it should have */
 static int sanity_check(void)
 {
@@ -1254,12 +1264,6 @@ static int sanity_check(void)
 	unsigned int group_header_printed;
 
 	void print_dep_header(void) {
-		fprintf(stderr, "\n"
-			"***********************************************************\n"
-			"  The '%s' dependency was previously satisfied but         \n"
-			"  is now unsatisfied.                                      \n",
-			dep_file->name);
-		dep_header_printed = 1;
 	}
 
 	AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
@@ -1286,7 +1290,7 @@ static int sanity_check(void)
 					}
 					if (!group_header_printed) {
 						if (!dep_header_printed) {
-							print_dep_header();
+							print_sanity_dep_header(&dep_header_printed);
 						}
 						fprintf(stderr, "\n"
 							"  The following modules will no longer be available:\n");
@@ -1310,7 +1314,7 @@ static int sanity_check(void)
 					}
 					if (!group_header_printed) {
 						if (!dep_header_printed) {
-							print_dep_header();
+							print_sanity_dep_header(&dep_header_printed);
 						}
 						fprintf(stderr, "\n"
 							"  The functionality of the following modules will\n"
