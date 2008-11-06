@@ -1263,9 +1263,6 @@ static int sanity_check(void)
 	unsigned int dep_header_printed;
 	unsigned int group_header_printed;
 
-	void print_dep_header(void) {
-	}
-
 	AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
 		if (!((dep_file->previously_met == DEP_FILE_MET) &&
 		      (dep_file->met == DEP_FILE_UNMET))) {
