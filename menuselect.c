@@ -530,6 +530,11 @@ static int process_deps(void)
 		char *name, *cur, *prev, *p;
 		int val;
 
+		/* Strip trailing CR/NL */
+		while ((p = strchr(buf, '\r')) || (p = strchr(buf, '\n'))) {
+			*p = '\0';
+		}
+
 		p = buf;
 		name = strsep(&p, "=");
 
