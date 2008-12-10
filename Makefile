@@ -11,8 +11,12 @@
 # the GNU General Public License
 #
 
-# read local makeopts settings
--include makeopts
+# even though we could use '-include makeopts' here, use a wildcard
+# lookup anyway, so that make won't try to build makeopts if it doesn't
+# exist (other rules will force it to be built if needed)
+ifneq ($(wildcard makeopts),)
+  include makeopts
+endif
 
 .PHONY: clean dist-clean distclean test ntest ctest gtest
 
