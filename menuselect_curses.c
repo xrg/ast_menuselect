@@ -60,15 +60,15 @@ static int max_x = 0;
 static int max_y = 0;
 
 static const char * const help_info[] = {
-	"scroll              => up/down arrows",
+	"scroll        => up/down arrows",
 	"toggle selection    => Enter",
 	"select              => y",
 	"deselect            => n",
-	"select all          => F8",
-	"deselect all        => F7",
-	"back                => left arrow",
-	"quit                => q",
-	"save and quit       => x",
+	"select all    => F8",
+	"deselect all  => F7",
+	"back          => left arrow",
+	"quit          => q",
+	"save and quit => x",
 	"",
 	"XXX means dependencies have not been met",
 	"    or a conflict exists",
@@ -403,7 +403,7 @@ static int run_category_menu(WINDOW *menu, int cat_num)
 			break;	
 		}
 		if (c == 'x' || c == 'X' || c == 'Q' || c == 'q')
-			break;
+			break;	
 
 		if (end <= maxopt) {
 			scroll |= SCROLL_DOWN;
@@ -436,6 +436,8 @@ static void draw_title_window(WINDOW *title)
 	waddstr(title, MENU_HELP);
 	wrefresh(title);
 }
+
+
 
 int run_menu(void)
 {
@@ -514,9 +516,9 @@ int run_menu(void)
 					break;
 				}
 			} else {
-				res = -1;
-				break;
-			}
+			res = -1;
+			break;
+		}
 		}
 		if (c == 'x' || c == 'X' || c == 's' || c == 'S')
 			break;	

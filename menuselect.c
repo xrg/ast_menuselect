@@ -545,8 +545,8 @@ static int match_member_relations(void)
 						continue;
 
 					use->member = mem2;
-					break;
-				}
+						break;
+					}
 				if (use->member)
 					break;
 
@@ -639,19 +639,13 @@ static void mark_as_present(const char *member, const char *category)
 {
 	struct category *cat;
 	struct member *mem;
-	char negate = 0;
-
-	if (*member == '-') {
-		member++;
-		negate = 1;
-	}
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		if (strcmp(category, cat->name))
 			continue;
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!strcmp(member, mem->name)) {
-				mem->was_enabled = mem->enabled = (negate ? !cat->positive_output : cat->positive_output);
+				mem->was_enabled = mem->enabled = cat->positive_output;
 				break;
 			}
 		}
@@ -749,7 +743,7 @@ void set_enabled(struct category *cat, int index)
 		return;
 
 	enable_member(mem);
-	mem->was_defaulted = 0;
+		mem->was_defaulted = 0;
 	changes_made++;
 
 	while (calc_dep_failures(1) || calc_conflict_failures(1));
@@ -994,7 +988,7 @@ static int generate_makeopts_file(void)
 				continue;
 
 			if (!mem->defaultenabled || !strcasecmp(mem->defaultenabled, "yes"))
-				fprintf(f, "MENUSELECT_DEPSFAILED=%s=%s\n", cat->name, mem->name);
+					fprintf(f, "MENUSELECT_DEPSFAILED=%s=%s\n", cat->name, mem->name);
 		}
 	}
 
@@ -1182,7 +1176,7 @@ static void process_defaults(void)
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!mem->defaultenabled)
 				continue;
-
+			
 			if (mem->depsfailed == HARD_FAILURE)
 				continue;
 
@@ -1224,7 +1218,7 @@ int main(int argc, char *argv[])
 	/* Process module dependencies */
 	if ((res = process_deps()))
 		exit(res);
-
+	
 	while (calc_dep_failures(0) || calc_conflict_failures(0));
 	
 	/* The --check-deps option is used to ask this application to check to

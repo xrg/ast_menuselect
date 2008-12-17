@@ -40,7 +40,6 @@ AH_BOTTOM(
 AC_PROG_CC
 AST_CHECK_GNU_MAKE
 
-
 AC_LANG(C)
 
 AC_CHECK_FUNCS([asprintf getloadavg setenv strcasestr strndup strnlen strsep strtoq unsetenv vasprintf])
