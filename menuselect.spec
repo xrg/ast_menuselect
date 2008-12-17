@@ -32,6 +32,7 @@ on asterisk's codebase.
 
 
 %build
+./bootstrap.sh
 %configure
 %make
 
