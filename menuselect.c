@@ -128,10 +128,13 @@ static int open_debug(void)
 	return 0;
 }
 
-static void print_debug(const char *format, ...)
+#define print_debug(f, ...) __print_debug(__LINE__, f, ## __VA_ARGS__)
+static void __attribute__((format(printf, 2, 3))) __print_debug(int line, const char *format, ...)
 {
 #ifdef MENUSELECT_DEBUG
 	va_list ap;
+
+	fprintf(debug, "%d -", line);
 
 	va_start(ap, format);
 	vfprintf(debug, format, ap);
@@ -272,10 +275,10 @@ static int parse_tree(const char *tree_file)
 			mem->displayname = mxmlElementGetAttr(cur2, "displayname");
 		
 			mem->remove_on_change = mxmlElementGetAttr(cur2, "remove_on_change");
-
-			if (!cat->positive_output)
+			if (!cat->positive_output) {
 				mem->was_enabled = mem->enabled = 1;
-	
+				print_debug("Enabling %s because the category does not have positive output\n", mem->name);
+			}
 			cur3 = mxmlFindElement(cur2, cur2, "defaultenabled", NULL, NULL, MXML_DESCEND);
 			if (cur3 && cur3->child)
 				mem->defaultenabled = cur3->child->value.opaque;
@@ -362,7 +365,7 @@ static int parse_tree(const char *tree_file)
 /*!
  * \arg interactive Set to non-zero if being called while user is making changes
  */
-static unsigned int calc_dep_failures(int interactive)
+static unsigned int calc_dep_failures(int interactive, int pre_confload)
 {
 	unsigned int result = 0;
 	struct category *cat;
@@ -394,6 +397,10 @@ static unsigned int calc_dep_failures(int interactive)
 		}
 	}
 
+	if (pre_confload) {
+		return 0;
+	}
+
 	do {
 		changed = 0;
 
@@ -422,8 +429,10 @@ static unsigned int calc_dep_failures(int interactive)
 				if (mem->depsfailed != old_failure) {
 					if ((mem->depsfailed == NO_FAILURE) && mem->was_defaulted) {
 						mem->enabled = !strcasecmp(mem->defaultenabled, "yes");
+						print_debug("Just set %s enabled to %d\n", mem->name, mem->enabled);
 					} else {
 						mem->enabled = interactive ? 0 : mem->was_enabled;
+						print_debug("Just set %s enabled to %d\n", mem->name, mem->enabled);
 					}
 					changed = 1;
 					break; /* This dependency is not met, so we can stop now */
@@ -441,7 +450,7 @@ static unsigned int calc_dep_failures(int interactive)
 	return result;
 }
 
-static unsigned int calc_conflict_failures(int interactive)
+static unsigned int calc_conflict_failures(int interactive, int pre_confload)
 {
 	unsigned int result = 0;
 	struct category *cat;
@@ -459,8 +468,10 @@ static unsigned int calc_conflict_failures(int interactive)
 				mem->conflictsfailed = NO_FAILURE;
 				AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
 					if (!strcasecmp(dep_file->name, cnf->name)) {
-						if (dep_file->met == DEP_FILE_MET)
+						if (dep_file->met == DEP_FILE_MET) {
 							mem->conflictsfailed = HARD_FAILURE;
+							print_debug("Setting %s conflictsfailed to HARD_FAILURE\n", mem->name);
+						}
 						break;
 					}
 				}
@@ -468,9 +479,15 @@ static unsigned int calc_conflict_failures(int interactive)
 				if (mem->conflictsfailed != NO_FAILURE)
 					break; /* This conflict was found, so we can stop now */
 			}
-			if (old_failure == SOFT_FAILURE && mem->conflictsfailed != HARD_FAILURE)
+			if (old_failure == SOFT_FAILURE && mem->conflictsfailed != HARD_FAILURE) {
+				print_debug("%d - Setting %s conflictsfailed to SOFT_FAILURE\n", __LINE__, mem->name);
 				mem->conflictsfailed = SOFT_FAILURE;
+			}
 		}
+	}
+
+	if (pre_confload) {
+		return 0;
 	}
 
 	do {
@@ -491,12 +508,14 @@ static unsigned int calc_conflict_failures(int interactive)
 						
 					if (cnf->member->enabled) {
 						mem->conflictsfailed = SOFT_FAILURE;
+						print_debug("%d - Setting %s conflictsfailed to SOFT_FAILURE because %s is enabled\n", __LINE__, mem->name, cnf->member->name);
 						break;
 					}
 				}
 				
 				if (mem->conflictsfailed != old_failure && mem->conflictsfailed != NO_FAILURE) {
 					mem->enabled = 0;
+					print_debug("Just set %s enabled to %d because of conflicts\n", mem->name, mem->enabled);
 					changed = 1;
 					break; /* This conflict has been found, so we can stop now */
 				}
@@ -743,12 +762,15 @@ static void mark_as_present(const char *member, const char *category)
 		negate = 1;
 	}
 
+	print_debug("Marking %s of %s as present\n", member, category);
+
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		if (strcmp(category, cat->name))
 			continue;
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!strcmp(member, mem->name)) {
 				mem->was_enabled = mem->enabled = (negate ? !cat->positive_output : cat->positive_output);
+				print_debug("Just set %s enabled to %d\n", mem->name, mem->enabled);
 				break;
 			}
 		}
@@ -786,8 +808,10 @@ unsigned int enable_member(struct member *mem)
 		}
 	}
 
-	if ((mem->enabled = can_enable))
-		while (calc_dep_failures(1) || calc_conflict_failures(1));
+	if ((mem->enabled = can_enable)) {
+		print_debug("Just set %s enabled to %d\n", mem->name, mem->enabled);
+		while (calc_dep_failures(1, 0) || calc_conflict_failures(1, 0));
+	}
 
 	return can_enable;
 }
@@ -806,7 +830,7 @@ void toggle_enabled(struct member *mem)
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures(1) || calc_conflict_failures(1));
+	while (calc_dep_failures(1, 0) || calc_conflict_failures(1, 0));
 }
 
 /*! \brief Toggle a member of a category at the specified index to enabled/disabled */
@@ -849,7 +873,7 @@ void set_enabled(struct category *cat, int index)
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures(1) || calc_conflict_failures(1));
+	while (calc_dep_failures(1, 0) || calc_conflict_failures(1, 0));
 }
 
 void clear_enabled(struct category *cat, int index)
@@ -872,7 +896,7 @@ void clear_enabled(struct category *cat, int index)
 	mem->was_defaulted = 0;
 	changes_made++;
 
-	while (calc_dep_failures(1) || calc_conflict_failures(1));
+	while (calc_dep_failures(1, 0) || calc_conflict_failures(1, 0));
 }
 
 /*! \brief Process a previously failed dependency
@@ -902,6 +926,7 @@ static void process_prev_failed_deps(char *buf)
 
 			if (!mem->depsfailed && !mem->conflictsfailed) {
 				mem->enabled = 1;			
+				print_debug("Just set %s enabled to %d in processing of previously failed deps\n", mem->name, mem->enabled);
 				mem->was_defaulted = 0;
 			}
 	
@@ -1222,7 +1247,7 @@ void set_all(struct category *cat, int val)
 		changes_made++;
 	}
 
-	while (calc_dep_failures(1) || calc_conflict_failures(1));
+	while (calc_dep_failures(1, 0) || calc_conflict_failures(1, 0));
 }
 
 int count_categories(void)
@@ -1363,6 +1388,8 @@ static void process_defaults(void)
 	struct category *cat;
 	struct member *mem;
 
+	print_debug("Processing default values since config was not present\n");
+
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!mem->defaultenabled)
@@ -1399,12 +1426,12 @@ int main(int argc, char *argv[])
 	/* Parse the input XML files to build the list of available options */
 	if ((res = build_member_list()))
 		exit(res);
-	
-	/* Process module dependencies */
+
+	/* Load module dependencies */
 	if ((res = process_deps()))
 		exit(res);
 
-	while (calc_dep_failures(0) || calc_conflict_failures(0));
+	while (calc_dep_failures(0, 1) || calc_conflict_failures(0, 1));
 
 	/* The --check-deps option is used to ask this application to check to
 	 * see if that an existing menuselect.makeopts file contains all of the
@@ -1425,14 +1452,14 @@ int main(int argc, char *argv[])
 	/* Dump the list produced by parsing the various input files */
 	dump_member_list();
 
-	while (calc_dep_failures(0) || calc_conflict_failures(0));
+	while (calc_dep_failures(0, 0) || calc_conflict_failures(0, 0));
 
 	if (!existing_config)
 		process_defaults();
 	else if (check_deps)
 		res = sanity_check();
 
-	while (calc_dep_failures(0) || calc_conflict_failures(0));
+	while (calc_dep_failures(0, 0) || calc_conflict_failures(0, 0));
 	
 	/* Run the menu to let the user enable/disable options */
 	if (!check_deps && !res)
