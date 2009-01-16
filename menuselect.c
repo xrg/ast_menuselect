@@ -617,7 +617,7 @@ static int match_member_relations(void)
 					break;
 				}
 				if (dep->member)
-					break;
+					continue;
 
 				AST_LIST_TRAVERSE(&categories, cat2, list) {
 					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
@@ -645,7 +645,7 @@ static int match_member_relations(void)
 					break;
 				}
 				if (use->member)
-					break;
+					continue;
 
 				AST_LIST_TRAVERSE(&categories, cat2, list) {
 					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
@@ -692,7 +692,7 @@ static int match_member_relations(void)
 					break;
 				}
 				if (cnf->member)
-					break;
+					continue;
 
 				AST_LIST_TRAVERSE(&categories, cat2, list) {
 					AST_LIST_TRAVERSE(&cat2->members, mem2, list) {
