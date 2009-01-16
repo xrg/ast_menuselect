@@ -1404,6 +1404,8 @@ int main(int argc, char *argv[])
 	if ((res = process_deps()))
 		exit(res);
 
+	while (calc_dep_failures(0) || calc_conflict_failures(0));
+
 	/* The --check-deps option is used to ask this application to check to
 	 * see if that an existing menuselect.makeopts file contains all of the
 	 * modules that have dependencies that have not been met.  If this
