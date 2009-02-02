@@ -30,7 +30,6 @@
 
 #define OUTPUT_MAKEOPTS_DEFAULT "menuselect.makeopts"
 #define OUTPUT_MAKEDEPS_DEFAULT "menuselect.makedeps"
-#define SAVED_MAKEOPTS          "asterisk.makeopts"
 #define MENUSELECT_DEPS         "build_tools/menuselect-deps"
 
 struct member;
