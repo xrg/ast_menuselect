@@ -1443,7 +1443,7 @@ int main(int argc, char *argv[])
 			check_deps = 1;
 		else {
 			res = parse_existing_config(argv[x]);
-			if (!res) {
+			if (!res && !strcasecmp(argv[x], OUTPUT_MAKEOPTS_DEFAULT)) {
 				existing_config = 1;
 			}
 			res = 0;
