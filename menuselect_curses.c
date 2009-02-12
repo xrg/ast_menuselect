@@ -875,7 +875,7 @@ static void play_space(void)
 		}
 		repaint_screen();
 		jiffies++;
-		usleep(2000);
+		usleep(1000);
 	}
 
 	while ((blip = AST_LIST_REMOVE_HEAD(&blips, entry)))
