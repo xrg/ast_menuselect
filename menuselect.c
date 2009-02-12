@@ -1461,7 +1461,7 @@ int main(int argc, char *argv[])
 
 	process_defaults();
 	
-	if (check_deps) {
+	if (check_deps && existing_config) {
 		res = sanity_check();
 	}
 
