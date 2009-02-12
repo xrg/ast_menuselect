@@ -770,6 +770,7 @@ static void mark_as_present(const char *member, const char *category)
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
 			if (!strcmp(member, mem->name)) {
 				mem->was_enabled = mem->enabled = (negate ? !cat->positive_output : cat->positive_output);
+				mem->was_present = 1;
 				print_debug("Just set %s enabled to %d\n", mem->name, mem->enabled);
 				break;
 			}
@@ -1392,14 +1393,17 @@ static void process_defaults(void)
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
-			if (!mem->defaultenabled)
+			if (!mem->defaultenabled || mem->was_present) {
 				continue;
+			}
 
-			if (mem->depsfailed == HARD_FAILURE)
+			if (mem->depsfailed == HARD_FAILURE) {
 				continue;
+			}
 
-			if (mem->conflictsfailed == HARD_FAILURE)
+			if (mem->conflictsfailed == HARD_FAILURE) {
 				continue;
+			}
 			
 			if (!strcasecmp(mem->defaultenabled, "yes")) {
 				mem->enabled = 1;
@@ -1455,10 +1459,11 @@ int main(int argc, char *argv[])
 
 	while (calc_dep_failures(0, 0) || calc_conflict_failures(0, 0));
 
-	if (!existing_config)
-		process_defaults();
-	else if (check_deps)
+	process_defaults();
+	
+	if (check_deps) {
 		res = sanity_check();
+	}
 
 	while (calc_dep_failures(0, 0) || calc_conflict_failures(0, 0));
 	

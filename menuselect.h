@@ -96,6 +96,9 @@ struct member {
 	  we have included it in the MENUSELECT_BUILD_DEPS line
 	  in the output file */
 	unsigned int build_deps_output:1;
+	/*! This member was present in an existing configuration file, so don't
+	 * mess with it when processing default values. */
+	unsigned int was_present:1;
 	/*! dependencies of this module */
 	AST_LIST_HEAD_NOLOCK(, depend) deps;
 	/*! conflicts of this module */
