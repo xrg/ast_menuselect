@@ -7,7 +7,7 @@ dist-clean:
 makeopts:
 
 menuselect:
-	./menuselelct
+	./menuselect-dummy
 
 # Generate some dummy files to satifsy dependencies from the main
 # Makefile.

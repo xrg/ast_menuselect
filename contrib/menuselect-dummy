@@ -63,6 +63,7 @@
 #   # Naturally.
 
 use strict;
+use Getopt::Long;
 
 # Holds global dependncy information. Keys are module names.
 my %ModInfo = ();
@@ -72,6 +73,8 @@ my $AutoconfDepsFile = "build_tools/menuselect-deps";
 
 # configuration file to read for some directives:
 my $ConfFile = "build_tools/conf";
+
+my $DumpFile = 'build_tools/dump_deps';
 
 # Modules removed randomely:
 my $RandomeModsFile = "build_tools/mods_removed_random";
@@ -196,6 +199,7 @@ sub parse_menuselect_xml_file($) {
 				Dir => $category,
 				Module => $1,
 				DisplayName => $2,
+				Defaultenabled => ['no'],
 				Avail => 1, 
 
 			};
@@ -216,7 +220,12 @@ sub parse_menuselect_xml_file($) {
 			if (! exists $member->{$key}) {
 				$member->{$key} = [];
 			}
-			push @{$member->{$key}}, ($val);
+			# Using "unshift' rather than 'push'.
+			# For a singleton value this makes the action an 
+			# override, as only the first value counts.
+			# For a list value, however, it means a reversed
+			# order.
+			unshift @{$member->{$key}}, ($val);
 		}
 	}
 
@@ -254,8 +263,20 @@ sub get_autoconf_deps() {
 	my @deps_list = (<DEPS>);
 	foreach (@deps_list){
 		chomp;
-		my ($lib, $avail) = split(/=/);
-		$ModInfo{$lib} = {Type=>'lib', Avail=>$avail};
+		my ($lib, $avail_val) = split(/=/);
+		my ($avail, $avail_old) = split(/:/, $avail_val);
+		my $disabled = 0;
+		if ($avail == -1) { 
+			$disabled = 1;
+			$avail = 0;
+		}
+		$ModInfo{$lib} = {
+			Type=>'lib', Avail=>$avail, Disabled => $disabled
+		};
+		if (defined $avail_old) {
+			$ModInfo{$lib}{AvailOld} = $avail_old;
+		}
+		# FIXME: 
 		if (($avail ne "0") && ($avail ne "1")) {
 			warning "Library $lib has invalid availability ".
 				"value <$avail> (check $AutoconfDepsFile).\n";
@@ -420,16 +441,6 @@ sub check_module($) {
 	if ($ModInfo{$mod}{Avail} == 0) {
 		return 0;
 	}
-	# XML inputs have a reversed logic: no 'defaultenabled' means 'no'
-	# And we need to actually print enabled ones, rather than disabled
-	# ones.
-	if ($ModInfo{$mod}{Type} eq 'XML') {
-		my $res = ((not exists $ModInfo{$mod}{Defaultenabled}) ||
-			($ModInfo{$mod}{Defaultenabled}[0] ne 'yes') );
-		$ModInfo{$mod}{Checked} = $res;
-		return $res;
-	}
-	# no dependencies to check:
 	if (! exists $ModInfo{$mod}{Depend}) {
 		$ModInfo{$mod}{Checked} = 1;
 		return 1;
@@ -468,8 +479,10 @@ sub resolve_deps() {
 	}
 }
 
-# generate menuselect.makeopts. Please let me know if some parts are
-# still missing.
+# generate menuselect.makeopts. 
+# The values in this file obey to different semantics:
+# 1. For modules, a module will be built unles listed here
+# 2. For XML values (sounds, CFLAGS) it will be enabled if listed here
 sub gen_makeopts() {
 	open MAKEDEPS, ">$MakeoptsFile" or
 		die "Failed to open opts file $MakeoptsFile for writing. Aborting: $!\n";
@@ -477,7 +490,11 @@ sub gen_makeopts() {
 	my %Subdirs;
 	foreach my $mod (sort keys %ModInfo) {
 		next unless ($ModInfo{$mod}{Type} =~ /^(module|XML)$/);
-		next if ($ModInfo{$mod}{Checked});
+		if ($ModInfo{$mod}{Type} eq 'XML') {
+			next unless ($ModInfo{$mod}{Checked});
+		} else {
+			next if ($ModInfo{$mod}{Checked});
+		}
 		my $dir = $ModInfo{$mod}{Dir};
 		if (! exists $Subdirs{$dir}) {
 			$Subdirs{$dir} = [];
@@ -492,30 +509,112 @@ sub gen_makeopts() {
 	close MAKEDEPS;
 }
 
+# Main function for --check-deps
+sub check_dependencies() {
+	read_conf();
+
+	extract_subdirs(@Subdirs);
+
+	parse_menuselect_xml_file('build_tools/cflags.xml');
+	parse_menuselect_xml_file('sounds/sounds.xml');
+
+	apply_random_drop();
+
+	get_autoconf_deps();
+
+	#dump_deps('build_tools/dump_deps_before_resolve');
+	resolve_deps();
+
+	# Handy debugging:
+	dump_deps($DumpFile);
+
+	check_required_patterns();
+
+	gen_makedeps();
+
+	gen_makeopts();
+}
+
 # 
 # The main program start here
 #
 
-read_conf();
+sub read_dump() {
+	my %items = ();
+	my $saved_rs = $/;
+	$/ = "\n\n";
+	open DUMP_FILE,$DumpFile or die "Can't read from dump file $DumpFile\n";
+	while (<DUMP_FILE>) {
+		my %item = ();
+		my @item_lines = split /\n\r?/;
+		foreach (@item_lines) {
+			my ($var, $value) = split /: /, $_, 2;
+			$item{$var} = $value;
+		}
+		$items{$item{Key}} = \%item;
+	}
+	close DUMP_FILE;
+	$/ = $saved_rs;
+	return \%items;
+}
 
-extract_subdirs(@Subdirs);
+sub print_module_status {
+	my $items = read_dump();
+	my %items_matched = ();
 
-parse_menuselect_xml_file('build_tools/cflags.xml');
-parse_menuselect_xml_file('sounds/sounds.xml');
+	foreach my $pattern (@_) {
+		foreach (keys %$items) {
+			if (/$pattern/i) {
+				$items_matched{$_} = 1;
+			}
+		}
+	}
 
-apply_random_drop();
+	my @items_list = sort keys %items_matched;
 
-get_autoconf_deps();
+	foreach my $item_name (@items_list) {
+		my $item = $items->{$item_name};
+		printf "%s %-8s %-30s\n",
+			(($item->{Avail})? 'Y':'n'),
+			$item->{Type},
+			$item->{Key};
+	}
+}
 
-#dump_deps('build_tools/dump_deps_before_resolve');
-resolve_deps();
+sub usage() {
+	print "$0: menuselect reimplementation\n";
+	print "\n";
+	print "Usage:\n";
+	print "$0  # menuselect processing\n";
+	print "$0 -m|--modinfo|--moduls-info PATTERN # Status of modules\n";
+	print "$0 -c|--check-deps                    # Check for dependencies\n";
+	print "\n";
+	print "PATTERN is a partial perl regex. Use '-m .' to list all.\n";
+}
 
-# Handy debugging:
-dump_deps('build_tools/dump_deps');
+my @module_status = ();
 
-check_required_patterns();
+my $action = '';
 
-gen_makedeps();
+my $rc = GetOptions(
+	'modinfo|modules-info|m=s' => \@module_status,
+	'check-deps|c:s' => sub { $action = 'check_dependencies'},
+	'help|h' => sub { usage(); exit 0 },
+);
+if (!$rc) {
+	usage();
+	exit $rc;
+}
 
-gen_makeopts();
+if (@module_status) {
+	$action = 'module_status';
+}
 
+if ($action eq 'module_status') {
+	print_module_status(@module_status);
+	exit 0;
+} elsif ( $action eq 'check_dependencies') {
+	check_dependencies();
+} else {
+	usage(); exit(1);
+}
