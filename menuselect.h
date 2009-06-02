@@ -61,8 +61,10 @@ struct use {
 	const char *name;
 	/*! the display name of the used package */
 	const char *displayname;
-	/*! if this dependency is a member, not an external object */
+	/*! if this used package is a member, not an external object */
 	struct member *member;
+	/*! if this used package was found */
+	unsigned char met;
 	/*! for linking */
 	AST_LIST_ENTRY(use) list;
 };

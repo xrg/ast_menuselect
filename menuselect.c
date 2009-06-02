@@ -90,7 +90,7 @@ struct dep_file {
 	enum dep_file_state met;
 	enum dep_file_state previously_met;
 	AST_LIST_ENTRY(dep_file) list;
-} *dep_file;
+};
 AST_LIST_HEAD_NOLOCK_STATIC(deps_file, dep_file);
 
 #if !defined(ast_strdupa) && defined(__GNUC__)
@@ -371,6 +371,7 @@ static unsigned int calc_dep_failures(int interactive, int pre_confload)
 	struct category *cat;
 	struct member *mem;
 	struct depend *dep;
+	struct dep_file *dep_file;
 	unsigned int changed, old_failure;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
@@ -383,8 +384,9 @@ static unsigned int calc_dep_failures(int interactive, int pre_confload)
 				mem->depsfailed = HARD_FAILURE;
 				AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
 					if (!strcasecmp(dep_file->name, dep->name)) {
-						if (dep_file->met == DEP_FILE_MET)
+						if (dep_file->met == DEP_FILE_MET) {
 							mem->depsfailed = NO_FAILURE;
+						}
 						break;
 					}
 				}
@@ -456,6 +458,7 @@ static unsigned int calc_conflict_failures(int interactive, int pre_confload)
 	struct category *cat;
 	struct member *mem;
 	struct conflict *cnf;
+	struct dep_file *dep_file;
 	unsigned int changed, old_failure;
 
 	AST_LIST_TRAVERSE(&categories, cat, list) {
@@ -538,6 +541,7 @@ static int process_deps(void)
 	FILE *f;
 	char buf[80];
 	int res = 0;
+	struct dep_file *dep_file;
 
 	if (!(f = fopen(MENUSELECT_DEPS, "r"))) {
 		fprintf(stderr, "Unable to open '%s' for reading!  Did you run ./configure ?\n", MENUSELECT_DEPS);
@@ -612,6 +616,8 @@ static int process_deps(void)
 
 static void free_deps_file(void)
 {
+	struct dep_file *dep_file;
+
 	/* Free the dependency list we built from the file */
 	while ((dep_file = AST_LIST_REMOVE_HEAD(&deps_file, list)))
 		free(dep_file);
@@ -1009,21 +1015,51 @@ static int generate_makedeps_file(void)
 	struct member *mem;
 	struct depend *dep;
 	struct use *use;
+	struct dep_file *dep_file;
 
 	if (!(f = fopen(output_makedeps, "w"))) {
 		fprintf(stderr, "Unable to open dependencies file (%s) for writing!\n", output_makedeps);
 		return -1;
 	}
 
+	/* Traverse all categories and members and mark which used packages were found,
+	 * skipping other members
+	 */
+	AST_LIST_TRAVERSE(&categories, cat, list) {
+		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			AST_LIST_TRAVERSE(&mem->uses, use, list) {
+				if (use->member) {
+					use->met = 0;
+					continue;
+				}
+				AST_LIST_TRAVERSE(&deps_file, dep_file, list) {
+					if ((use->met = !strcasecmp(use->name, dep_file->name))) {
+						break;
+					}
+				}
+			}
+		}
+	}
+
 	/* Traverse all categories and members and output dependencies for each member */
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
+			unsigned char header_printed = 0;
+
 			if (AST_LIST_EMPTY(&mem->deps) && AST_LIST_EMPTY(&mem->uses))
 				continue;
 
-			fprintf(f, "MENUSELECT_DEPENDS_%s=", mem->name);
 			AST_LIST_TRAVERSE(&mem->deps, dep, list) {
 				const char *c;
+
+				if (dep->member) {
+					continue;
+				}
+
+				if (!header_printed) {
+					fprintf(f, "MENUSELECT_DEPENDS_%s=", mem->name);
+					header_printed = 1;
+				}
 
 				for (c = dep->name; *c; c++)
 					fputc(toupper(*c), f);
@@ -1032,11 +1068,23 @@ static int generate_makedeps_file(void)
 			AST_LIST_TRAVERSE(&mem->uses, use, list) {
 				const char *c;
 
+				if (!use->met) {
+					continue;
+				}
+
+				if (!header_printed) {
+					fprintf(f, "MENUSELECT_DEPENDS_%s=", mem->name);
+					header_printed = 1;
+				}
+
 				for (c = use->name; *c; c++)
 					fputc(toupper(*c), f);
 				fputc(' ', f);
 			}
-			fprintf(f, "\n");
+
+			if (header_printed) {
+				fprintf(f, "\n");
+			}
 		}
 	}
 
@@ -1272,7 +1320,7 @@ int count_members(struct category *cat)
 	return count;		
 }
 
-static void print_sanity_dep_header(unsigned int *flag)
+static void print_sanity_dep_header(struct dep_file *dep_file, unsigned int *flag)
 {
 	fprintf(stderr, "\n"
 		"***********************************************************\n"
@@ -1290,6 +1338,7 @@ static int sanity_check(void)
 	struct member *mem;
 	struct depend *dep;
 	struct use *use;
+	struct dep_file *dep_file;
 	unsigned int dep_header_printed;
 	unsigned int group_header_printed;
 
@@ -1317,7 +1366,7 @@ static int sanity_check(void)
 					}
 					if (!group_header_printed) {
 						if (!dep_header_printed) {
-							print_sanity_dep_header(&dep_header_printed);
+							print_sanity_dep_header(dep_file, &dep_header_printed);
 						}
 						fprintf(stderr, "\n"
 							"  The following modules will no longer be available:\n");
@@ -1341,7 +1390,7 @@ static int sanity_check(void)
 					}
 					if (!group_header_printed) {
 						if (!dep_header_printed) {
-							print_sanity_dep_header(&dep_header_printed);
+							print_sanity_dep_header(dep_file, &dep_header_printed);
 						}
 						fprintf(stderr, "\n"
 							"  The functionality of the following modules will\n"
