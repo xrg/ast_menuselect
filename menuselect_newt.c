@@ -274,7 +274,7 @@ int run_menu(void)
 	newtComponentAddCallback(rootOptions, root_menu_callback, NULL);
 
 	subOptions = newtListbox(38, 1, y - 15, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
-	newtListboxSetWidth(subOptions, x - 42);
+	newtListboxSetWidth(subOptions, x - 47);
 	newtFormAddComponent(form, subOptions);
 	newtComponentAddCallback(subOptions, category_menu_callback, NULL);
 
