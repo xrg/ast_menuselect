@@ -269,11 +269,11 @@ int run_menu(void)
 	newtFormSetTimer(form, 200);
 
 	rootOptions = newtListbox(2, 1, y - 15, 0);
-	newtListboxSetWidth(rootOptions, 29);
+	newtListboxSetWidth(rootOptions, 34);
 	newtFormAddComponent(form, rootOptions);
 	newtComponentAddCallback(rootOptions, root_menu_callback, NULL);
 
-	subOptions = newtListbox(33, 1, y - 15, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
+	subOptions = newtListbox(38, 1, y - 15, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
 	newtListboxSetWidth(subOptions, x - 42);
 	newtFormAddComponent(form, subOptions);
 	newtComponentAddCallback(subOptions, category_menu_callback, NULL);
