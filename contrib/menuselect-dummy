@@ -86,7 +86,7 @@ my $MakeoptsFile = "menuselect.makeopts";
 # If those modules are not present, the build will fail (PCRE patterns)
 my @RequiredModules = ();
 
-my @Subdirs = qw/apps cdr channels codecs formats funcs main pbx res utils/;
+my @Subdirs = qw/apps bridges cdr cel channels codecs formats funcs main pbx res utils/;
 
 my @XmlCategories = 'cflags';
 
