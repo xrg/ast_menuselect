@@ -551,6 +551,11 @@ sub read_dump() {
 			my ($var, $value) = split /: /, $_, 2;
 			$item{$var} = $value;
 		}
+		# FIXME: dependencies are a list. This should not be a 
+		# special case.
+		if (exists $item{Depend}) {
+			$item{Depend} = [split /\s*,\s*/,$item{Depend}];
+		}
 		$items{$item{Key}} = \%item;
 	}
 	close DUMP_FILE;
@@ -558,7 +563,38 @@ sub read_dump() {
 	return \%items;
 }
 
+# Explain why a module (read from the dump file) was not enabled.
+# (We assume here that $item->{Avail} is 0)
+sub fail_reason($) {
+	my $item = shift;
+	if ($item->{Type} eq 'lib') {
+		return " Not found: system library";
+	} elsif ($item->{Type} eq 'XML') {
+		if ($item->{Defaultenabled} !~ /^y/) {
+			return "Not enabled";
+		} else {
+			return "Missing dependencies";
+		}
+	} elsif ($item->{Type} eq 'module') {
+		if (exists ($item->{Defaultenabled}) && 
+			$item->{Defaultenabled} =~ /^n/) {
+			return "Disabled";
+		} else {
+			return "Missing dependencies";
+		}
+	}
+}
+
+sub item_used($) {
+	my $item = shift;
+	my $type = $item->{Type};
+
+	return $item->{Avail} if ($type eq 'lib');
+	return $item->{Checked};
+}
+
 sub print_module_status {
+	my $flag_verbose = shift;
 	my $items = read_dump();
 	my %items_matched = ();
 
@@ -574,10 +610,36 @@ sub print_module_status {
 
 	foreach my $item_name (@items_list) {
 		my $item = $items->{$item_name};
-		printf "%s %-8s %-30s\n",
-			(($item->{Avail})? 'Y':'n'),
-			$item->{Type},
-			$item->{Key};
+		if ($flag_verbose) {
+			printf "%s %-8s %-30s\n",
+				(item_used($item)? 'Y':'n'),
+				$item->{Type},
+				$item->{Key};
+			if (!$item->{Avail}) {
+				my $reason = fail_reason($item);
+				print " $reason\n";
+			}
+			foreach (@{$item->{Depend}}) {
+				my $depmod = $items->{$_};
+					printf(" * %-12s ",$_);
+					print (item_used($depmod)? '': "un");
+					print "available\n";
+			}
+		} else {
+			printf "%s %-8s %-30s",
+				(item_used($item)? 'Y':'n'),
+				$item->{Type},
+				$item->{Key};
+			foreach (@{$item->{Depend}}) {
+				my $depmod = $items->{$_};
+				if (item_used($depmod)) {
+					print "$_ ";
+				} else {
+					printf "[%s] ", $_;
+				}
+			}
+			print "\n";
+		}
 	}
 }
 
@@ -587,6 +649,7 @@ sub usage() {
 	print "Usage:\n";
 	print "$0  # menuselect processing\n";
 	print "$0 -m|--modinfo|--moduls-info PATTERN # Status of modules\n";
+	print "$0 -v|--verbose                       # verbose (modinfo)\n";
 	print "$0 -c|--check-deps                    # Check for dependencies\n";
 	print "\n";
 	print "PATTERN is a partial perl regex. Use '-m .' to list all.\n";
@@ -594,10 +657,13 @@ sub usage() {
 
 my @module_status = ();
 
+my $flag_verbose = 0;
+
 my $action = '';
 
 my $rc = GetOptions(
 	'modinfo|modules-info|m=s' => \@module_status,
+	'verbose|v' => \$flag_verbose,
 	'check-deps|c:s' => sub { $action = 'check_dependencies'},
 	'help|h' => sub { usage(); exit 0 },
 );
@@ -611,7 +677,7 @@ if (@module_status) {
 }
 
 if ($action eq 'module_status') {
-	print_module_status(@module_status);
+	print_module_status($flag_verbose, @module_status);
 	exit 0;
 } elsif ( $action eq 'check_dependencies') {
 	check_dependencies();
