@@ -220,6 +220,11 @@ sub parse_menuselect_xml_file($) {
 			if (! exists $member->{$key}) {
 				$member->{$key} = [];
 			}
+			
+			# Make sure dependencies are upper-case.
+			# FIXME: this is not the proper place for such a fix
+			$val = uc($val) if ($key =~ /Depend|Use/);
+
 			# Using "unshift' rather than 'push'.
 			# For a singleton value this makes the action an 
 			# override, as only the first value counts.
