@@ -7,3 +7,6 @@ mxml/config.status
 mxml/libmxml.a
 mxml/Makefile
 mxml/mxml.list
+*.o
+configure
+config.log
