@@ -47,21 +47,20 @@ static newtComponent dependsDataTextbox;
 static newtComponent usesDataTextbox;
 static newtComponent conflictsDataTextbox;
 
-static void root_menu_callback(newtComponent component, void *data);
+static newtComponent exitButton;
+static newtComponent saveAndExitButton;
 
+static void build_members_menu(int overlay);
+static void root_menu_callback(newtComponent component, void *data);
 
 static void toggle_all_options(int select)
 {
 	struct category *cat = newtListboxGetCurrent(rootOptions);
-	struct member *mem = newtListboxGetCurrent(subOptions);
 
 	set_all(cat, select);
 
-	// Redraw
-	root_menu_callback(rootOptions, NULL);
-
-	// Set our selection back
-	newtListboxSetCurrentByKey(subOptions, mem);
+	/* Redraw */
+	build_members_menu(1);
 
 	return;
 }
@@ -72,11 +71,8 @@ static void toggle_selected_option()
 
 	toggle_enabled(mem);
 
-	// Redraw the menu
-	root_menu_callback(rootOptions, NULL);
-
-	// Set our selection back to what it should be
-	newtListboxSetCurrentByKey(subOptions, mem);
+	/* Redraw */
+	build_members_menu(1);
 
 	return;
 }
@@ -109,7 +105,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->deps, dep, list) {
-			strncat(buffer, dep->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, dep->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			strncat(buffer, dep->member ? "(M)" : "(E)", sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(dep, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
@@ -122,7 +118,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->uses, uses, list) {
-			strncat(buffer, uses->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, uses->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(uses, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
 		}
@@ -134,7 +130,7 @@ static void display_member_info(struct member *mem)
 	} else {
 		strcpy(buffer, "");
 		AST_LIST_TRAVERSE(&mem->conflicts, con, list) {
-			strncat(buffer, con->name, sizeof(buffer) - strlen(buffer) - 1);
+			strncat(buffer, con->displayname, sizeof(buffer) - strlen(buffer) - 1);
 			strncat(buffer, con->member ? "(M)" : "(E)", sizeof(buffer) - strlen(buffer) - 1);
 			if (AST_LIST_NEXT(con, list))
 				strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1);
@@ -145,15 +141,17 @@ static void display_member_info(struct member *mem)
 	return;
 }
 
-static void build_members_menu()
+static void build_members_menu(int overlay)
 {
 	struct category *cat;
 	struct member *mem;
 	char buf[64];
+	int i = 0;
 
-	reset_display();
-
-	newtListboxClear(subOptions);
+	if (!overlay) {
+		reset_display();
+		newtListboxClear(subOptions);
+	}
 
 	cat = newtListboxGetCurrent(rootOptions);
 
@@ -169,10 +167,18 @@ static void build_members_menu()
 			snprintf(buf, sizeof(buf), "[%s] %s", mem->enabled ? "*" : " ", mem->name);
 		}
 
-		newtListboxAppendEntry(subOptions, buf, mem);
+		if (overlay) {
+			newtListboxSetEntry(subOptions, i, buf);
+		} else {
+			newtListboxAppendEntry(subOptions, buf, mem);
+		}
+
+		i++;
 	}
 
-	display_member_info(AST_LIST_FIRST(&cat->members));
+	if (!overlay) {
+		display_member_info(AST_LIST_FIRST(&cat->members));
+	}
 
 	return;
 }
@@ -204,7 +210,7 @@ static void category_menu_callback(newtComponent component, void *data)
 
 static void root_menu_callback(newtComponent component, void *data)
 {
-	build_members_menu();
+	build_members_menu(0);
 }
 
 int run_confirmation_dialog(int *result)
@@ -262,13 +268,13 @@ int run_menu(void)
 
 	newtFormSetTimer(form, 200);
 
-	rootOptions = newtListbox(2, 1, y - 16, 0);
-	newtListboxSetWidth(rootOptions, 29);
+	rootOptions = newtListbox(2, 1, y - 15, 0);
+	newtListboxSetWidth(rootOptions, 34);
 	newtFormAddComponent(form, rootOptions);
 	newtComponentAddCallback(rootOptions, root_menu_callback, NULL);
 
-	subOptions = newtListbox(33, 1, y - 16, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
-	newtListboxSetWidth(subOptions, x - 42);
+	subOptions = newtListbox(38, 1, y - 15, NEWT_FLAG_SCROLL | NEWT_FLAG_RETURNEXIT);
+	newtListboxSetWidth(subOptions, x - 47);
 	newtFormAddComponent(form, subOptions);
 	newtComponentAddCallback(subOptions, category_menu_callback, NULL);
 
@@ -280,6 +286,9 @@ int run_menu(void)
 	usesDataTextbox      = newtTextbox(18, y - 10, x - 27, 1, 0);
 	conflictsDataTextbox = newtTextbox(18, y - 9, x - 27, 1, 0);
 
+	exitButton = newtButton(x - 23, y - 11, "  Exit  ");
+	saveAndExitButton = newtButton(x - 43, y - 11, " Save & Exit ");
+
 	newtFormAddComponents(
 		form,
 		memberNameTextbox,
@@ -289,6 +298,8 @@ int run_menu(void)
 		usesDataTextbox,
 		conflictsLabel,
 		conflictsDataTextbox,
+		saveAndExitButton,
+		exitButton,
 		NULL);
 
 	build_main_menu();
@@ -328,16 +339,36 @@ int run_menu(void)
 				break;
 			}
 
-			if (done)
+			if (done) {
 				break;
+			}
 		} else if (es.reason == NEWT_EXIT_COMPONENT) {
-			toggle_selected_option();
+			if (es.u.co == saveAndExitButton) {
+				res = 0;
+				break;
+			} else if (es.u.co == exitButton) {
+				int done = 1;
+
+				if (changes_made) {
+					done = run_confirmation_dialog(&res);
+				} else {
+					res = -1;
+				}
+
+				if (done) {
+					break;
+				}
+			} else if (es.u.co == subOptions) {
+				toggle_selected_option();
+			}
 		}
 	}
 
 	/* Cleanup */
+	reset_display();
 	newtFormDestroy(form);
 	newtPopWindow();
+	newtPopHelpLine();
 	newtCls();
 	newtFinished();
 

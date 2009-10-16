@@ -37,6 +37,8 @@ struct member;
 struct depend {
 	/*! the name of the dependency */
 	const char *name;
+	/*! the display name of the dependency */
+	const char *displayname;
 	/*! if this dependency is a member, not an external object */
 	struct member *member;
 	/*! for linking */
@@ -46,6 +48,8 @@ struct depend {
 struct conflict {
 	/*! the name of the conflict */
 	const char *name;
+	/*! the display name of the conflict */
+	const char *displayname;
 	/*! if this conflict is a member, not an external object */
 	const struct member *member;
 	/*! for linking */
@@ -55,8 +59,12 @@ struct conflict {
 struct use {
 	/*! the name of the used package */
 	const char *name;
-	/*! if this dependency is a member, not an external object */
+	/*! the display name of the used package */
+	const char *displayname;
+	/*! if this used package is a member, not an external object */
 	struct member *member;
+	/*! if this used package was found */
+	unsigned char met;
 	/*! for linking */
 	AST_LIST_ENTRY(use) list;
 };

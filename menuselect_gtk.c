@@ -273,18 +273,18 @@ int run_menu(void)
 			struct conflict *cnf;
 
 			AST_LIST_TRAVERSE(&mem->deps, dep, list) {
-				strncat(dep_buf, dep->name, sizeof(dep_buf) - strlen(dep_buf) - 1);
+				strncat(dep_buf, dep->displayname, sizeof(dep_buf) - strlen(dep_buf) - 1);
 				strncat(dep_buf, dep->member ? "(M)" : "(E)", sizeof(dep_buf) - strlen(dep_buf) - 1);
 				if (AST_LIST_NEXT(dep, list))
 					strncat(dep_buf, ", ", sizeof(dep_buf) - strlen(dep_buf) - 1);
 			}
 			AST_LIST_TRAVERSE(&mem->uses, use, list) {
-				strncat(use_buf, use->name, sizeof(use_buf) - strlen(use_buf) - 1);
+				strncat(use_buf, use->displayname, sizeof(use_buf) - strlen(use_buf) - 1);
 				if (AST_LIST_NEXT(use, list))
 					strncat(use_buf, ", ", sizeof(use_buf) - strlen(use_buf) - 1);
 			}
 			AST_LIST_TRAVERSE(&mem->conflicts, cnf, list) {
-				strncat(cnf_buf, cnf->name, sizeof(cnf_buf) - strlen(cnf_buf) - 1);
+				strncat(cnf_buf, cnf->displayname, sizeof(cnf_buf) - strlen(cnf_buf) - 1);
 				strncat(cnf_buf, cnf->member ? "(M)" : "(E)", sizeof(cnf_buf) - strlen(cnf_buf) - 1);
 				if (AST_LIST_NEXT(cnf, list))
 					strncat(cnf_buf, ", ", sizeof(cnf_buf) - strlen(cnf_buf) - 1);
@@ -308,8 +308,11 @@ int run_menu(void)
 	}
 
 	tree = (GtkTreeView *) gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+
+#if GTK_CHECK_VERSION(2,10,0)
 	gtk_tree_view_set_enable_tree_lines(tree, TRUE);
 	gtk_tree_view_set_grid_lines(tree, GTK_TREE_VIEW_GRID_LINES_BOTH);
+#endif
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Name",
