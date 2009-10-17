@@ -12,7 +12,7 @@ Release:	%{release}
 License:	GPL
 Group:		System/Tools
 URL:		http://www.asterisk.org/
-Source0:	%{name}-%{version}.tar.gz
+Source0:	%git_bs_source %{name}-%{version}.tar.gz
 BuildRequires:	newt-devel
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
@@ -47,3 +47,5 @@ install menuselect %{buildroot}/%{_bindir}/ast_menuselect
 %defattr(-,root,root)
 %doc README
 %attr(0755,root,root)		%{_bindir}/*
+
+%changelog -f %{_sourcedir}/%{name}-changelog.gitrpm.txt
