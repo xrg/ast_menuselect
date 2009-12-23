@@ -42,7 +42,6 @@ AST_CHECK_GNU_MAKE
 
 
 AC_LANG(C)
-AC_FUNC_ALLOCA
 AC_ARG_ENABLE([debug],
 	[AS_HELP_STRING([--enable-debug], [Turn on debug mode])],
 	[case "${enableval}" in
@@ -52,7 +51,8 @@ AC_ARG_ENABLE([debug],
     esac])
 AC_SUBST(MENUSELECT_DEBUG)
 
-AC_CHECK_FUNCS([asprintf getloadavg setenv strcasestr strndup strnlen strsep strtoq unsetenv vasprintf])
+AC_FUNC_ALLOCA
+AC_CHECK_FUNCS([asprintf getloadavg setenv strcasestr strndup strnlen strsep unsetenv vasprintf])
 
 # The frontend can use curses, ncurses, newt or GTK2 so check for all of them
 

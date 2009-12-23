@@ -609,11 +609,11 @@ CURSES_LIB
 PBX_NEWT
 NEWT_INCLUDE
 NEWT_LIB
-MENUSELECT_DEBUG
 EGREP
 GREP
 CPP
 ALLOCA
+MENUSELECT_DEBUG
 GNU_MAKE
 OBJEXT
 EXEEXT
@@ -3014,6 +3014,17 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+# Check whether --enable-debug was given.
+if test "${enable_debug+set}" = set; then :
+  enableval=$enable_debug; case "${enableval}" in
+		y|ye|yes) MENUSELECT_DEBUG=yes ;;
+		n|no)  MENUSELECT_DEBUG=no ;;
+		*) as_fn_error "bad value ${enableval} for --enable-debug" "$LINENO" 5  ;;
+    esac
+fi
+
+
+
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3603,18 +3614,7 @@ _ACEOF
 
 fi
 
-# Check whether --enable-debug was given.
-if test "${enable_debug+set}" = set; then :
-  enableval=$enable_debug; case "${enableval}" in
-		y|ye|yes) MENUSELECT_DEBUG=yes ;;
-		n|no)  MENUSELECT_DEBUG=no ;;
-		*) as_fn_error "bad value ${enableval} for --enable-debug" "$LINENO" 5  ;;
-    esac
-fi
-
-
-
-for ac_func in asprintf getloadavg setenv strcasestr strndup strnlen strsep strtoq unsetenv vasprintf
+for ac_func in asprintf getloadavg setenv strcasestr strndup strnlen strsep unsetenv vasprintf
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

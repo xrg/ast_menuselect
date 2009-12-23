@@ -74,9 +74,6 @@
 /* Define to 1 if you have the `strsep' function. */
 #undef HAVE_STRSEP
 
-/* Define to 1 if you have the `strtoq' function. */
-#undef HAVE_STRTOQ
-
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
