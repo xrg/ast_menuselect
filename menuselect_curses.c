@@ -107,7 +107,7 @@ static void show_help(WINDOW *win)
 	wclear(win);
 	for (i = 0; i < (sizeof(help_info) / sizeof(help_info[0])); i++) {
 		wmove(win, i, max_x / 2 - 15);
-		waddstr(win, help_info[i]);
+		waddstr(win, (char *) help_info[i]);
 	}
 	wrefresh(win);
 	getch(); /* display the help until the user hits a key */
@@ -189,7 +189,7 @@ static void display_mem_info(WINDOW *menu, struct member *mem, int start, int en
 
 	if (mem->displayname) {
 		wmove(menu, end - start + 2, max_x / 2 - 16);
-		waddstr(menu, mem->displayname);
+		waddstr(menu, (char *) mem->displayname);
 	}
 	if (!AST_LIST_EMPTY(&mem->deps)) {
 		wmove(menu, end - start + 3, max_x / 2 - 16);
@@ -438,7 +438,7 @@ static void draw_title_window(WINDOW *title)
 	wmove(title, 1, (max_x / 2) - (strlen(titlebar) / 2));
 	waddstr(title, titlebar);
 	wmove(title, 2, (max_x / 2) - (strlen(menu_name) / 2));
-	waddstr(title, menu_name);
+	waddstr(title, (char *) menu_name);
 	wmove(title, 3, (max_x / 2) - (strlen(titlebar) / 2));
 	waddstr(title, titlebar);
 	wmove(title, 5, (max_x / 2) - (strlen(MENU_HELP) / 2));
