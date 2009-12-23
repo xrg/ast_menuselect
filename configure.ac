@@ -42,7 +42,7 @@ AST_CHECK_GNU_MAKE
 
 
 AC_LANG(C)
-
+AC_FUNC_ALLOCA
 AC_ARG_ENABLE([debug],
 	[AS_HELP_STRING([--enable-debug], [Turn on debug mode])],
 	[case "${enableval}" in
