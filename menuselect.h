@@ -84,6 +84,8 @@ struct member {
 	const char *defaultenabled;
 	/*! Delete these file(s) if this member changes */
 	const char *remove_on_change;
+	/*! Touch these file(s) if this member changes */
+	const char *touch_on_change;
 	/*! This module is currently selected */
 	unsigned int enabled:1;
 	/*! This module was enabled when the config was loaded */
@@ -115,6 +117,8 @@ struct category {
 	const char *displayname;
 	/*! Delete these file(s) if anything in this category changes */
 	const char *remove_on_change;
+	/*! Touch these file(s) if anything in this category changes */
+	const char *touch_on_change;
 	/*! Output what is selected, as opposed to not selected */
 	unsigned int positive_output:1;
 	/*! All choices in this category are mutually exclusive */

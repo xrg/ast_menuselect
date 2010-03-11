@@ -71,6 +71,9 @@ my %ModInfo = ();
 # extract configuration from kernel modules:
 my $AutoconfDepsFile = "build_tools/menuselect-deps";
 
+my $AutoconfOptsFile = "makeopts";
+my %ConfigureOpts = (); # 
+
 # configuration file to read for some directives:
 my $ConfFile = "build_tools/conf";
 
@@ -288,6 +291,23 @@ sub get_autoconf_deps() {
 		}
 	}
 	close DEPS;
+}
+
+# Get the available libraries that autoconf generated.
+sub get_autoconf_opts() {
+	open OPTS, $AutoconfOptsFile or
+		die "Failed to open $AutoconfOptsFile. Aborting: $!\n";
+
+	while (<OPTS>) {
+		chomp;
+		next if /^(#|$)/;
+		my ($var, $val) = split /\s*=\s*/, $_, 2;
+		$ConfigureOpts{$var} = $val;
+	}
+	close OPTS;
+	if (not exists $ConfigureOpts{AST_DEVMODE}) {
+		$ConfigureOpts{AST_DEVMODE} = 'no';
+	}
 }
 
 # Read our specific config file.
@@ -520,7 +540,12 @@ sub check_dependencies() {
 
 	extract_subdirs(@Subdirs);
 
+	get_autoconf_opts();
+
 	parse_menuselect_xml_file('build_tools/cflags.xml');
+	if ($ConfigureOpts{AST_DEVMODE} eq 'yes') {
+		parse_menuselect_xml_file('build_tools/cflags-devmode.xml');
+	} 
 	parse_menuselect_xml_file('sounds/sounds.xml');
 
 	apply_random_drop();

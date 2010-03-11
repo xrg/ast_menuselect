@@ -263,6 +263,8 @@ static int parse_tree(const char *tree_file)
 			cat->exclusive = !strcasecmp(tmp, "yes");
 		if ((tmp = mxmlElementGetAttr(cur, "remove_on_change")))
 			cat->remove_on_change = tmp;
+		if ((tmp = mxmlElementGetAttr(cur, "touch_on_change")))
+			cat->touch_on_change = tmp;
 
 		for (cur2 = mxmlFindElement(cur, cur, "member", NULL, NULL, MXML_DESCEND_FIRST);
 		     cur2;
@@ -273,8 +275,9 @@ static int parse_tree(const char *tree_file)
 			
 			mem->name = mxmlElementGetAttr(cur2, "name");
 			mem->displayname = mxmlElementGetAttr(cur2, "displayname");
-		
+			mem->touch_on_change = mxmlElementGetAttr(cur2, "touch_on_change");
 			mem->remove_on_change = mxmlElementGetAttr(cur2, "remove_on_change");
+
 			if (!cat->positive_output) {
 				mem->was_enabled = mem->enabled = 1;
 				print_debug("Enabling %s because the category does not have positive output\n", mem->name);
@@ -1173,6 +1176,7 @@ static int generate_makeopts_file(void)
 	AST_LIST_TRAVERSE(&categories, cat, list) {
 		unsigned int had_changes = 0;
 		char rmcommand[256] = "rm -rf ";
+		char touchcommand[256] = "touch -c ";
 		char *file, *buf;
 
 		AST_LIST_TRAVERSE(&cat->members, mem, list) {
@@ -1181,6 +1185,15 @@ static int generate_makeopts_file(void)
 
 			had_changes = 1;
 
+			if (mem->touch_on_change) {
+				for (buf = ast_strdupa(mem->touch_on_change), file = strsep(&buf, " ");
+				     file;
+				     file = strsep(&buf, " ")) {
+					strcpy(&touchcommand[9], file);
+					system(touchcommand);
+				}
+			}
+
 			if (mem->remove_on_change) {
 				for (buf = ast_strdupa(mem->remove_on_change), file = strsep(&buf, " ");
 				     file;
@@ -1188,6 +1201,15 @@ static int generate_makeopts_file(void)
 					strcpy(&rmcommand[7], file);
 					system(rmcommand);
 				}
+			}
+		}
+
+		if (cat->touch_on_change && had_changes) {
+			for (buf = ast_strdupa(cat->touch_on_change), file = strsep(&buf, " ");
+			     file;
+			     file = strsep(&buf, " ")) {
+				strcpy(&touchcommand[9], file);
+				system(touchcommand);
 			}
 		}
 
